@@ -721,9 +721,19 @@ function doLoginStep1() {
   document.getElementById('login-step-email').style.display = 'none';
 
   if (isAdmin) {
-    // Check if admin has a Supabase Auth account already
-    document.getElementById('login-step-password').style.display = 'block';
-    document.getElementById('login-password').focus();
+    // Try a dummy sign-in to check if account exists
+    sb.auth.signInWithPassword({ email: email, password: '##check##' }).then(function(res) {
+      document.getElementById('login-step-email').style.display = 'none';
+      if (res.error && res.error.message.includes('Invalid login credentials')) {
+        // Account exists, wrong password — show password screen
+        document.getElementById('login-step-password').style.display = 'block';
+        document.getElementById('login-password').focus();
+      } else {
+        // No account yet — show set password screen
+        document.getElementById('login-step-setpassword').style.display = 'block';
+        document.getElementById('login-newpw1').focus();
+      }
+    });
   } else {
     // Regular user — send magic link
     sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: false } }).then(function(res) {
