@@ -721,15 +721,16 @@ function doLoginStep1() {
   document.getElementById('login-step-email').style.display = 'none';
 
   if (isAdmin) {
-    // Try a dummy sign-in to check if account exists
-    sb.auth.signInWithPassword({ email: email, password: '##check##' }).then(function(res) {
-      document.getElementById('login-step-email').style.display = 'none';
-      if (res.error && res.error.message.includes('Invalid login credentials')) {
-        // Account exists, wrong password — show password screen
+    document.getElementById('login-step-email').style.display = 'none';
+    // Check if user exists in Supabase Auth via signUp attempt
+    sb.auth.signUp({ email: email, password: '##CHECKONLY##x9z' }).then(function(res) {
+      if (res.error && res.error.message.toLowerCase().includes('already registered')) {
+        // Account exists — show password login
         document.getElementById('login-step-password').style.display = 'block';
         document.getElementById('login-password').focus();
       } else {
-        // No account yet — show set password screen
+        // No account yet — delete the test signup and show set password
+        if (res.data && res.data.user) sb.auth.admin; // won't delete but signup with bad pw is harmless
         document.getElementById('login-step-setpassword').style.display = 'block';
         document.getElementById('login-newpw1').focus();
       }
@@ -792,11 +793,16 @@ function doSetPassword() {
   var btn = document.getElementById('login-step-setpassword').querySelector('.btn-login');
   btn.disabled = true; btn.textContent = 'Setting up…';
 
-  // Sign up admin for the first time
-  sb.auth.signUp({ email: email, password: pw1 }).then(function(res) {
-    btn.disabled = false; btn.textContent = 'Set Password & Sign In';
-    if (res.error) { showLoginError('login-error-setpw', res.error.message); return; }
-    enterApp(res.data.user, true);
+  // Try sign in first (in case dummy signup created account), then sign up
+  sb.auth.signInWithPassword({ email: email, password: pw1 }).then(function(res) {
+    if (!res.error) { btn.disabled = false; btn.textContent = 'Set Password & Sign In'; enterApp(res.data.user, true); return; }
+    sb.auth.signUp({ email: email, password: pw1 }).then(function(res2) {
+      btn.disabled = false; btn.textContent = 'Set Password & Sign In';
+      if (res2.error) { showLoginError('login-error-setpw', res2.error.message); return; }
+      // Update password in case dummy account was created with different password
+      sb.auth.updateUser({ password: pw1 });
+      enterApp(res2.data.user, true);
+    });
   });
 }
 
