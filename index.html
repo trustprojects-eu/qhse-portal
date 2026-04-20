@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>QHSE Portal</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:#eef2f7;color:#1e293b;min-height:100vh}
@@ -358,7 +359,7 @@ textarea{resize:vertical;min-height:60px}
         <div class="page-sub">Manage users, form assignments, and view submissions.</div>
 
         <div class="admin-info-box">
-          Data is stored locally and submitted to SharePoint. Configure your SharePoint site URL in the <strong>Settings</strong> tab.
+          Data is stored in Supabase cloud database. All submissions, users and assignments are synced in real time.
         </div>
 
         <div class="stat-row">
@@ -393,7 +394,7 @@ textarea{resize:vertical;min-height:60px}
                   <option value="Client">Client</option>
                 </select>
               </div>
-              <div class="field-group"><label>Invite Code *</label><input type="text" id="new-user-code" placeholder="e.g. SMITH001" style="text-transform:uppercase"></div>
+              <div class="field-group"><label>Invite Code</label><input type="text" id="new-user-code" placeholder="Auto-generated" style="text-transform:uppercase;background:#f1f5f9;color:#64748b" readonly></div>
             </div>
             <div style="margin-bottom:10px">
               <div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">Assign Forms</div>
@@ -456,11 +457,20 @@ textarea{resize:vertical;min-height:60px}
                   <option value="">All Users</option>
                 </select>
               </div>
+              <div class="field-group" style="min-width:160px">
+                <label>Filter by Status</label>
+                <select id="filter-status" onchange="renderSubmissions()">
+                  <option value="">All Statuses</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Accepted">Accepted</option>
+                  <option value="Declined">Declined</option>
+                </select>
+              </div>
               <button class="btn-sm btn-sm-red" style="margin-top:18px" onclick="clearAllSubmissions()">Clear All Submissions</button>
             </div>
             <div style="overflow-x:auto">
               <table class="admin-table">
-                <thead><tr><th>User</th><th>Form</th><th>Submitted At</th><th>Project</th><th>View</th></tr></thead>
+                <thead><tr><th>User</th><th>Form</th><th>Submitted At</th><th>Project</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody id="submissions-tbody"></tbody>
               </table>
             </div>
@@ -515,23 +525,29 @@ textarea{resize:vertical;min-height:60px}
         <!-- TAB: SETTINGS -->
         <div class="admin-panel" id="admin-tab-settings">
           <div class="admin-card">
-            <h3>SharePoint Connection</h3>
-            <div style="margin-bottom:12px;font-size:13px;color:#64748b">
-              Enter your SharePoint site URL. Submissions will be saved directly to <strong>QSHE_FormSubmissions</strong> list.
+            <h3>Database Connection</h3>
+            <div style="font-size:13px;color:#64748b;margin-bottom:12px">All data is stored in Supabase cloud database.</div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <span id="supa-status-dot" style="width:10px;height:10px;border-radius:50%;background:#94a3b8;display:inline-block"></span>
+              <span id="supa-status-text" style="font-size:13px;color:#64748b">Checking connection...</span>
+              <button class="btn-sm btn-sm-blue" onclick="testSupabaseConnection()" style="padding:6px 14px">Test Connection</button>
             </div>
-            <div class="admin-form-row" style="align-items:flex-end">
-              <div class="field-group" style="flex:1">
-                <label>SharePoint Site URL</label>
-                <input type="url" id="sp-site-url" placeholder="https://trustsubcontracting.sharepoint.com/sites/QHSE" style="font-size:13px">
-              </div>
-              <button class="btn-sm btn-sm-green" onclick="saveSpSettings()" style="height:38px;padding:0 18px;font-size:13px">Save</button>
-              <button class="btn-sm btn-sm-blue" onclick="testSpConnection()" style="height:38px;padding:0 18px;font-size:13px">Test Connection</button>
-            </div>
-            <div id="sp-status" style="margin-top:10px;font-size:13px;display:none"></div>
           </div>
           <div class="admin-card">
-            <h3>Connection Status</h3>
-            <div id="sp-connection-info" style="font-size:13px;color:#64748b">No SharePoint URL configured yet.</div>
+            <h3>Admin Accounts</h3>
+            <div style="font-size:13px;color:#64748b;margin-bottom:14px">These accounts have full admin access to the portal.</div>
+            <table class="admin-table">
+              <thead><tr><th>Name</th><th>Email</th><th>Invite Code</th><th>Actions</th></tr></thead>
+              <tbody id="admin-accounts-tbody"></tbody>
+            </table>
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f1f5f9">
+              <h3 style="font-size:14px;margin-bottom:12px">Add Admin Account</h3>
+              <div class="admin-form-row">
+                <div class="field-group"><label>Name</label><input type="text" id="new-admin-name" placeholder="Full name"></div>
+                <div class="field-group"><label>Email</label><input type="text" id="new-admin-email" placeholder="email@trustprojects.eu"></div>
+              </div>
+              <button class="btn-submit" style="font-size:13px;padding:9px 22px" onclick="addAdminAccount()">Add Admin</button>
+            </div>
           </div>
         </div>
 
@@ -607,10 +623,21 @@ var appState = {
 // ============================================================
 function lsGet(key) { try { return JSON.parse(localStorage.getItem('qhse_' + key)); } catch(e) { return null; } }
 function lsSet(key, val) { localStorage.setItem('qhse_' + key, JSON.stringify(val)); }
-function getUsers() { return lsGet('users') || []; }
-function saveUsers(u) { lsSet('users', u); }
-function getSubmissions() { return lsGet('submissions') || []; }
-function saveSubmissions(s) { lsSet('submissions', s); }
+// ============================================================
+// SUPABASE
+// ============================================================
+var SUPA_URL = 'https://qmsxwdegwguvukcygnhl.supabase.co';
+var SUPA_KEY = 'sb_publishable_hBnkTOAapHkdUD3MsYrOhA_lzsteYYq';
+var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// In-memory cache (filled after login)
+var _sbUsers = [];
+var _sbSubmissions = [];
+
+function getUsers() { return _sbUsers; }
+function saveUsers(u) { _sbUsers = u; }
+function getSubmissions() { return _sbSubmissions; }
+function saveSubmissions(s) { _sbSubmissions = s; }
 
 // ============================================================
 // FORM META HELPERS
@@ -636,48 +663,76 @@ function doLogin() {
   var name = document.getElementById('login-username').value.trim();
   var code = document.getElementById('login-code').value.trim().toUpperCase();
   var errEl = document.getElementById('login-error');
+  var btn = document.querySelector('.btn-login');
   if (!name) { errEl.textContent = 'Please enter your name.'; errEl.style.display = 'block'; return; }
   if (!code) { errEl.textContent = 'Please enter an invite code.'; errEl.style.display = 'block'; return; }
-
-  if (code === 'ADMIN2025') {
-    errEl.style.display = 'none';
-    appState.user = name;
-    appState.isAdmin = true;
-    appState.assignedForms = getAllFormIds();
-    document.getElementById('user-pill').textContent = name + ' (Admin)';
-    document.getElementById('nav-admin').style.display = 'flex';
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    initFormStatus();
-    buildSidebarNav();
-    initAutosave();
-    renderDashboard();
-    showPage('dashboard');
-    return;
-  }
-
-  var users = getUsers();
-  var found = null;
-  for (var i = 0; i < users.length; i++) {
-    if (users[i].code === code && users[i].active) { found = users[i]; break; }
-  }
-  if (!found) { errEl.style.display = 'block'; errEl.textContent = 'Invalid or unrecognized invite code.'; return; }
-
   errEl.style.display = 'none';
-  appState.user = found.name;
-  appState.userEmail = found.email || '';
-  appState.userCompany = found.company || '';
-  appState.isAdmin = false;
-  appState.assignedForms = found.forms || [];
-  document.getElementById('user-pill').textContent = found.name;
-  document.getElementById('nav-admin').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-  initFormStatus();
-  buildSidebarNav();
-  initAutosave();
-  renderDashboard();
-  showPage('dashboard');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+
+  sb.from('invites').select('*').eq('token', code).single().then(function(res) {
+    btn.disabled = false; btn.textContent = 'Sign In';
+    if (res.error || !res.data) {
+      errEl.textContent = 'Invalid invite code. Please try again.'; errEl.style.display = 'block'; return;
+    }
+    var invite = res.data;
+    if (invite.used) {
+      errEl.textContent = 'This invite code has already been used.'; errEl.style.display = 'block'; return;
+    }
+    if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+      errEl.textContent = 'This invite code has expired.'; errEl.style.display = 'block'; return;
+    }
+    var isAdmin = invite.token === 'ADMIN' || invite.role === 'admin';
+
+    // Mark invite used (non-admin only)
+    if (!isAdmin) {
+      sb.from('invites').update({ used: true, used_at: new Date().toISOString() }).eq('token', code);
+    }
+
+    // Register employee if not admin
+    var empPromise = isAdmin
+      ? Promise.resolve({ data: { id: 'admin', name: name, email: invite.email || '', company: '', forms: getAllFormIds(), role: 'admin' } })
+      : sb.from('employees').insert({ name: name, email: invite.email || '', company: invite.company || '', invite_token: code, role: 'user', active: true }).select().single();
+
+    empPromise.then(function(empRes) {
+      var emp = empRes.data || {};
+      // Load assigned forms
+      var formsPromise = isAdmin
+        ? Promise.resolve({ data: [] })
+        : sb.from('assignments').select('form_id').eq('employee_id', emp.id);
+
+      formsPromise.then(function(aRes) {
+        var assignedForms = isAdmin ? getAllFormIds() : (aRes.data || []).map(function(a){ return a.form_id; });
+        // Load all users & submissions for admin
+        var loadExtra = isAdmin
+          ? Promise.all([
+              sb.from('employees').select('*'),
+              sb.from('submissions').select('*').order('submitted_at', { ascending: false })
+            ])
+          : Promise.resolve([{ data: [] }, { data: [] }]);
+
+        loadExtra.then(function(extras) {
+          _sbUsers = extras[0].data || [];
+          _sbSubmissions = extras[1].data || [];
+
+          appState.user = name;
+          appState.employeeId = emp.id;
+          appState.userEmail = emp.email || '';
+          appState.userCompany = emp.company || '';
+          appState.isAdmin = isAdmin;
+          appState.assignedForms = assignedForms;
+          document.getElementById('user-pill').textContent = name + (isAdmin ? ' (Admin)' : '');
+          document.getElementById('nav-admin').style.display = isAdmin ? 'flex' : 'none';
+          document.getElementById('login-screen').style.display = 'none';
+          document.getElementById('app').style.display = 'flex';
+          initFormStatus();
+          buildSidebarNav();
+          initAutosave();
+          renderDashboard();
+          showPage('dashboard');
+        });
+      });
+    });
+  });
 }
 
 function initFormStatus() {
@@ -787,7 +842,6 @@ function showPage(page) {
     buildAssignFormChecks('new-user-forms');
     buildAssignFormChecks('assign-forms-checks');
     populateFilterForm();
-    loadSpSettings();
   }
 
   if (window.innerWidth <= 900) {
@@ -1585,7 +1639,19 @@ function spPostItem(listName, fields) {
 }
 
 function submitToSharePoint(formId, data) {
-  // Always save locally first
+  // Save to Supabase
+  var subRecord = {
+    employee_id: appState.employeeId || null,
+    employee_name: data.submittedBy,
+    form_id: formId,
+    form_data: data,
+    submitted_at: data.submittedAt
+  };
+  sb.from('submissions').insert(subRecord).then(function(res) {
+    if (res.error) { showToast('Warning: could not save to database: ' + res.error.message, true); }
+  });
+
+  // Keep in-memory cache updated
   var subs = getSubmissions();
   subs.push({
     formId: formId,
@@ -1813,7 +1879,7 @@ function showAdminTab(tab, evt) {
   if (tab === 'assignments') { populateAssignSelect(); }
   if (tab === 'formeditor') { feShowList(); }
   if (tab === 'users') { renderUsersTable(); }
-  if (tab === 'settings') { loadSpSettings(); }
+  if (tab === 'settings') { loadAdminAccounts(); }
   updateAdminStats();
 }
 
@@ -1851,23 +1917,36 @@ function adminAddUser() {
   var name = document.getElementById('new-user-name').value.trim();
   var email = document.getElementById('new-user-email').value.trim();
   var role = document.getElementById('new-user-role').value;
-  var code = document.getElementById('new-user-code').value.trim().toUpperCase();
   var deadline = document.getElementById('new-user-deadline').value;
-  if (!name || !code) { showToast('Name and Invite Code are required.', true); return; }
+  if (!name) { showToast('Name is required.', true); return; }
   var forms = [];
   document.querySelectorAll('#new-user-forms input:checked').forEach(function(cb){ forms.push(cb.value); });
-  var users = getUsers();
-  if (users.some(function(u){ return u.code === code; })) { showToast('Invite code already in use. Choose a different one.', true); return; }
-  users.push({ id: Date.now(), name: name, email: email, role: role, code: code, forms: forms, deadline: deadline, active: true });
-  saveUsers(users);
-  document.getElementById('new-user-name').value = '';
-  document.getElementById('new-user-email').value = '';
-  document.getElementById('new-user-code').value = '';
-  document.getElementById('new-user-deadline').value = '';
-  document.querySelectorAll('#new-user-forms input').forEach(function(cb){ cb.checked = false; });
-  renderUsersTable();
-  updateAdminStats();
-  showToast('User "' + name + '" added. Invite code: ' + code);
+
+  // Generate a random invite token
+  var token = Math.random().toString(36).substring(2,8).toUpperCase() + '-' + Math.random().toString(36).substring(2,6).toUpperCase();
+  var expires = deadline ? new Date(deadline).toISOString() : null;
+
+  sb.from('invites').insert({ token: token, email: email, created_by: appState.user, expires_at: expires }).then(function(invRes) {
+    if (invRes.error) { showToast('Error creating invite: ' + invRes.error.message, true); return; }
+    sb.from('employees').insert({ name: name, email: email, role: role, invite_token: token, active: true }).select().single().then(function(empRes) {
+      if (empRes.error) { showToast('Error adding user: ' + empRes.error.message, true); return; }
+      var emp = empRes.data;
+      // Save assignments
+      var assignments = forms.map(function(fid){ return { employee_id: emp.id, form_id: fid, deadline: deadline || null }; });
+      var assignPromise = assignments.length > 0 ? sb.from('assignments').insert(assignments) : Promise.resolve({});
+      assignPromise.then(function() {
+        emp.forms = forms; emp.code = token; emp.deadline = deadline;
+        _sbUsers.push(emp);
+        document.getElementById('new-user-name').value = '';
+        document.getElementById('new-user-email').value = '';
+        document.getElementById('new-user-deadline').value = '';
+        document.querySelectorAll('#new-user-forms input').forEach(function(cb){ cb.checked = false; });
+        renderUsersTable();
+        updateAdminStats();
+        showToast('User "' + name + '" added. Invite code: ' + token);
+      });
+    });
+  });
 }
 
 function renderUsersTable() {
@@ -1889,7 +1968,7 @@ function renderUsersTable() {
     tr.innerHTML =
       '<td style="font-weight:600">' + esc(u.name) + '</td>' +
       '<td>' + esc(u.role) + '</td>' +
-      '<td><code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:12px">' + esc(u.code) + '</code></td>' +
+      '<td><code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:12px">' + esc(u.invite_token || u.code || '—') + '</code></td>' +
       '<td style="font-size:12px">' + esc(formLabels) + '</td>' +
       '<td style="' + dlStyle + ';font-size:12px">' + dl + '</td>' +
       '<td><span class="admin-badge ' + (u.active ? 'admin-badge-active' : 'admin-badge-inactive') + '">' + (u.active ? 'Active' : 'Inactive') + '</span></td>' +
@@ -1904,20 +1983,25 @@ function renderUsersTable() {
 function toggleUserActive(idx) {
   var users = getUsers();
   if (!users[idx]) return;
-  users[idx].active = !users[idx].active;
-  saveUsers(users);
-  renderUsersTable();
-  updateAdminStats();
+  var newState = !users[idx].active;
+  sb.from('employees').update({ active: newState }).eq('id', users[idx].id).then(function(res) {
+    if (res.error) { showToast('Error updating user.', true); return; }
+    users[idx].active = newState;
+    renderUsersTable();
+    updateAdminStats();
+  });
 }
 
 function deleteUser(idx) {
   var users = getUsers();
   if (!users[idx]) return;
   if (!confirm('Delete user "' + users[idx].name + '"? This cannot be undone.')) return;
-  users.splice(idx, 1);
-  saveUsers(users);
-  renderUsersTable();
-  updateAdminStats();
+  sb.from('employees').delete().eq('id', users[idx].id).then(function(res) {
+    if (res.error) { showToast('Error deleting user.', true); return; }
+    _sbUsers.splice(idx, 1);
+    renderUsersTable();
+    updateAdminStats();
+  });
 }
 
 // ============================================================
@@ -1967,44 +2051,65 @@ function saveAssignment() {
 // ============================================================
 // ADMIN — SUBMISSIONS
 // ============================================================
+function reviewSubmission(subId, status) {
+  sb.from('submissions').update({ review_status: status, reviewed_by: appState.user, reviewed_at: new Date().toISOString() }).eq('id', subId).then(function(res) {
+    if (res.error) { showToast('Error updating status.', true); return; }
+    var s = _sbSubmissions.find(function(x){ return x.id === subId; });
+    if (s) s.review_status = status;
+    renderSubmissions();
+    updateAdminStats();
+    showToast('Submission marked as ' + status + '.');
+  });
+}
+
 function renderSubmissions() {
   var configs = getFormConfigs();
   var subs = getSubmissions();
   var filterForm = (document.getElementById('filter-form')||{}).value || '';
   var filterUser = (document.getElementById('filter-user')||{}).value || '';
+  var filterStatus = (document.getElementById('filter-status')||{}).value || '';
 
   var userSel = document.getElementById('filter-user');
   if (userSel) {
     var current = userSel.value;
     var names = [];
-    subs.forEach(function(s){ if (names.indexOf(s.submittedBy) < 0) names.push(s.submittedBy); });
+    subs.forEach(function(s){ var n = s.employee_name||s.submittedBy||''; if (n && names.indexOf(n)<0) names.push(n); });
     userSel.innerHTML = '<option value="">All Users</option>';
     names.forEach(function(n){ var o=document.createElement('option'); o.value=n; o.textContent=n; if(n===current) o.selected=true; userSel.appendChild(o); });
   }
 
-  if (filterForm) subs = subs.filter(function(s){ return s.formId === filterForm; });
-  if (filterUser) subs = subs.filter(function(s){ return s.submittedBy === filterUser; });
+  if (filterForm) subs = subs.filter(function(s){ return s.form_id===filterForm || s.formId===filterForm; });
+  if (filterUser) subs = subs.filter(function(s){ return (s.employee_name||s.submittedBy||'')===filterUser; });
+  if (filterStatus) subs = subs.filter(function(s){ return (s.review_status||'Pending')===filterStatus; });
 
   var tbody = document.getElementById('submissions-tbody');
   if (!tbody) return;
   tbody.innerHTML = '';
   if (subs.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" style="color:#94a3b8;text-align:center;padding:20px">No submissions yet.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="color:#94a3b8;text-align:center;padding:20px">No submissions yet.</td></tr>';
     return;
   }
   var allSubs = getSubmissions();
   subs.slice().reverse().forEach(function(s) {
     var realIdx = allSubs.indexOf(s);
-    var f = configs[s.formId] || { code: s.formId, title: '' };
+    var fid = s.form_id || s.formId || '';
+    var f = configs[fid] || { code: fid, title: '' };
+    var name = s.employee_name || s.submittedBy || '—';
+    var submittedAt = s.submitted_at || s.submittedAt;
+    var status = s.review_status || 'Pending';
+    var statusColor = status==='Accepted' ? '#16a34a' : status==='Declined' ? '#dc2626' : '#d97706';
+    var statusBg = status==='Accepted' ? '#dcfce7' : status==='Declined' ? '#fee2e2' : '#fef3c7';
     var tr = document.createElement('tr');
     tr.innerHTML =
-      '<td style="font-weight:600">' + esc(s.submittedBy) + '</td>' +
+      '<td style="font-weight:600">' + esc(name) + '</td>' +
       '<td><span style="font-weight:700;color:#0ea5e9">' + esc(f.code) + '</span> ' + esc(f.title) + '</td>' +
-      '<td style="font-size:12px;color:#64748b">' + (s.submittedAt ? new Date(s.submittedAt).toLocaleString() : '—') + '</td>' +
-      '<td style="font-size:12px">' + esc(s.project || '—') + '</td>' +
+      '<td style="font-size:12px;color:#64748b">' + (submittedAt ? new Date(submittedAt).toLocaleString() : '—') + '</td>' +
+      '<td style="font-size:12px">' + esc((s.form_data && s.form_data.project) || s.project || '—') + '</td>' +
+      '<td><span style="background:' + statusBg + ';color:' + statusColor + ';padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700">' + status + '</span></td>' +
       '<td style="display:flex;gap:5px;flex-wrap:wrap">' +
         '<button class="btn-sm btn-sm-blue" onclick="viewSubmission(' + realIdx + ')">View</button>' +
-        '<button class="btn-sm btn-sm-green" onclick="printSubmission(' + realIdx + ')">Print</button>' +
+        '<button class="btn-sm btn-sm-green" onclick="reviewSubmission(\'' + s.id + '\',\'Accepted\')">Accept</button>' +
+        '<button class="btn-sm btn-sm-red" onclick="reviewSubmission(\'' + s.id + '\',\'Declined\')">Decline</button>' +
         '<button class="btn-sm btn-sm-amber" onclick="emailSubmission(' + realIdx + ')">Email</button>' +
       '</td>';
     tbody.appendChild(tr);
@@ -2533,6 +2638,75 @@ function resetAllFormConfigs() {
   saveFormConfigs(JSON.parse(JSON.stringify(DEFAULT_FORM_CONFIGS)));
   feShowList();
   showToast('All form configs reset to defaults.');
+}
+
+// ============================================================
+// SETTINGS — SUPABASE + ADMIN ACCOUNTS
+// ============================================================
+function testSupabaseConnection() {
+  var dot = document.getElementById('supa-status-dot');
+  var txt = document.getElementById('supa-status-text');
+  txt.textContent = 'Testing...';
+  sb.from('invites').select('id').limit(1).then(function(res) {
+    if (res.error) {
+      dot.style.background = '#ef4444';
+      txt.textContent = 'Connection failed: ' + res.error.message;
+    } else {
+      dot.style.background = '#22c55e';
+      txt.textContent = 'Connected to Supabase successfully.';
+    }
+  });
+}
+
+function loadAdminAccounts() {
+  sb.from('invites').select('*').eq('role', 'admin').then(function(res) {
+    var tbody = document.getElementById('admin-accounts-tbody');
+    if (!tbody) return;
+    var rows = res.data || [];
+    tbody.innerHTML = '';
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="color:#94a3b8;text-align:center;padding:20px">No admin accounts yet.</td></tr>';
+      return;
+    }
+    rows.forEach(function(r) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td style="font-weight:600">' + esc(r.created_by || '—') + '</td>' +
+        '<td>' + esc(r.email || '—') + '</td>' +
+        '<td><code style="background:#f1f5f9;padding:2px 8px;border-radius:4px;font-size:12px">' + esc(r.token) + '</code>' +
+        ' <button class="btn-sm btn-sm-blue" style="padding:2px 8px;font-size:11px" onclick="copyText(\'' + r.token + '\')">Copy</button></td>' +
+        '<td><button class="btn-sm btn-sm-red" onclick="deleteAdminAccount(\'' + r.id + '\')">Remove</button></td>';
+      tbody.appendChild(tr);
+    });
+    testSupabaseConnection();
+  });
+}
+
+function addAdminAccount() {
+  var name = document.getElementById('new-admin-name').value.trim();
+  var email = document.getElementById('new-admin-email').value.trim();
+  if (!name || !email) { showToast('Name and email are required.', true); return; }
+  var token = 'ADMIN-' + Math.random().toString(36).substring(2,7).toUpperCase();
+  sb.from('invites').insert({ token: token, email: email, created_by: name, role: 'admin', used: false }).then(function(res) {
+    if (res.error) { showToast('Error: ' + res.error.message, true); return; }
+    document.getElementById('new-admin-name').value = '';
+    document.getElementById('new-admin-email').value = '';
+    loadAdminAccounts();
+    showToast('Admin added. Code: ' + token);
+  });
+}
+
+function deleteAdminAccount(id) {
+  if (!confirm('Remove this admin account?')) return;
+  sb.from('invites').delete().eq('id', id).then(function(res) {
+    if (res.error) { showToast('Error: ' + res.error.message, true); return; }
+    loadAdminAccounts();
+    showToast('Admin account removed.');
+  });
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(function(){ showToast('Copied: ' + text); });
 }
 
 </script>
