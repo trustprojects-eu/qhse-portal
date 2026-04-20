@@ -722,18 +722,12 @@ function doLoginStep1() {
 
   if (isAdmin) {
     document.getElementById('login-step-email').style.display = 'none';
-    // Check if user exists in Supabase Auth via signUp attempt
-    sb.auth.signUp({ email: email, password: '##CHECKONLY##x9z' }).then(function(res) {
-      if (res.error && res.error.message.toLowerCase().includes('already registered')) {
-        // Account exists — show password login
-        document.getElementById('login-step-password').style.display = 'block';
-        document.getElementById('login-password').focus();
-      } else {
-        // No account yet — delete the test signup and show set password
-        if (res.data && res.data.user) sb.auth.admin; // won't delete but signup with bad pw is harmless
-        document.getElementById('login-step-setpassword').style.display = 'block';
-        document.getElementById('login-newpw1').focus();
-      }
+    // Use password reset endpoint to check existence without creating a session
+    sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.href }).then(function(res) {
+      // resetPasswordForEmail succeeds whether or not account exists on free tier
+      // So: always show set-password first; if they already have one they'll get an error and we redirect to password screen
+      document.getElementById('login-step-setpassword').style.display = 'block';
+      document.getElementById('login-newpw1').focus();
     });
   } else {
     // Regular user — send magic link
@@ -793,16 +787,21 @@ function doSetPassword() {
   var btn = document.getElementById('login-step-setpassword').querySelector('.btn-login');
   btn.disabled = true; btn.textContent = 'Setting up…';
 
-  // Try sign in first (in case dummy signup created account), then sign up
-  sb.auth.signInWithPassword({ email: email, password: pw1 }).then(function(res) {
-    if (!res.error) { btn.disabled = false; btn.textContent = 'Set Password & Sign In'; enterApp(res.data.user, true); return; }
-    sb.auth.signUp({ email: email, password: pw1 }).then(function(res2) {
-      btn.disabled = false; btn.textContent = 'Set Password & Sign In';
-      if (res2.error) { showLoginError('login-error-setpw', res2.error.message); return; }
-      // Update password in case dummy account was created with different password
-      sb.auth.updateUser({ password: pw1 });
-      enterApp(res2.data.user, true);
-    });
+  sb.auth.signUp({ email: email, password: pw1 }).then(function(res) {
+    btn.disabled = false; btn.textContent = 'Set Password & Sign In';
+    if (res.error) {
+      if (res.error.message.toLowerCase().includes('already registered')) {
+        // Account exists — switch to password login screen
+        document.getElementById('login-step-setpassword').style.display = 'none';
+        document.getElementById('login-step-password').style.display = 'block';
+        document.getElementById('login-password').focus();
+        showLoginError('login-error-pw', 'Account already exists. Please enter your password.');
+      } else {
+        showLoginError('login-error-setpw', res.error.message);
+      }
+      return;
+    }
+    enterApp(res.data.user, true);
   });
 }
 
@@ -861,12 +860,31 @@ function enterApp(authUser, isAdmin) {
   });
 }
 
-// Handle magic link redirect (user lands back on page after clicking email link)
+// Clear any stale session on page load, then listen for magic link redirects
+sb.auth.getSession().then(function(res) {
+  var session = res.data && res.data.session;
+  if (session) {
+    // Only auto-enter if this looks like a magic link redirect (has hash token in URL)
+    var hash = window.location.hash;
+    if (hash && hash.includes('access_token')) {
+      var email = session.user.email;
+      var isAdmin = ADMIN_EMAILS.indexOf(email.toLowerCase()) >= 0;
+      enterApp(session.user, isAdmin);
+    } else {
+      // Stale session — sign out so user must log in fresh
+      sb.auth.signOut();
+    }
+  }
+});
+
 sb.auth.onAuthStateChange(function(event, session) {
-  if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session && document.getElementById('login-screen').style.display !== 'none') {
-    var email = session.user.email;
-    var isAdmin = ADMIN_EMAILS.indexOf(email.toLowerCase()) >= 0;
-    enterApp(session.user, isAdmin);
+  if (event === 'SIGNED_IN' && session) {
+    var hash = window.location.hash;
+    if (hash && hash.includes('access_token')) {
+      var email = session.user.email;
+      var isAdmin = ADMIN_EMAILS.indexOf(email.toLowerCase()) >= 0;
+      enterApp(session.user, isAdmin);
+    }
   }
 });
 
