@@ -280,12 +280,49 @@ textarea{resize:vertical;min-height:60px}
       <div class="logo-icon">Q</div>
       <h1>QHSE Portal</h1>
     </div>
-    <label for="login-username">Username</label>
-    <input type="text" id="login-username" placeholder="Enter your name" autocomplete="off">
-    <label for="login-code">Invite Code</label>
-    <input type="text" id="login-code" placeholder="Enter invite code" autocomplete="off">
-    <div class="login-error" id="login-error">Invalid invite code. Please try again.</div>
-    <button class="btn-login" onclick="doLogin()">Sign In</button>
+
+    <!-- STEP 1: Email entry (all users) -->
+    <div id="login-step-email">
+      <label for="login-email">Email address</label>
+      <input type="email" id="login-email" placeholder="you@company.com" autocomplete="email">
+      <div class="login-error" id="login-error"></div>
+      <button class="btn-login" onclick="doLoginStep1()">Continue</button>
+    </div>
+
+    <!-- STEP 2A: Admin — password -->
+    <div id="login-step-password" style="display:none">
+      <p style="font-size:13px;color:#64748b;margin-bottom:12px">Admin account detected. Enter your password.</p>
+      <label for="login-password">Password</label>
+      <input type="password" id="login-password" placeholder="Your password" autocomplete="current-password">
+      <div style="text-align:right;margin-top:4px">
+        <span onclick="doForgotPassword()" style="font-size:12px;color:#0ea5e9;cursor:pointer">Forgot password?</span>
+      </div>
+      <div class="login-error" id="login-error-pw"></div>
+      <button class="btn-login" onclick="doAdminLogin()">Sign In</button>
+      <button onclick="resetLoginSteps()" style="width:100%;margin-top:8px;padding:10px;background:none;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;font-size:14px;color:#64748b">Back</button>
+    </div>
+
+    <!-- STEP 2B: Regular user — magic link sent -->
+    <div id="login-step-magiclink" style="display:none">
+      <div style="text-align:center;padding:20px 0">
+        <div style="font-size:40px;margin-bottom:16px">📧</div>
+        <div style="font-size:16px;font-weight:700;color:#020617;margin-bottom:8px">Check your email!</div>
+        <div style="font-size:13px;color:#64748b;line-height:1.6">We sent a login link to<br><strong id="magic-link-email"></strong><br>Click the link to access your forms.</div>
+      </div>
+      <button onclick="resetLoginSteps()" style="width:100%;margin-top:8px;padding:10px;background:none;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;font-size:14px;color:#64748b">Use different email</button>
+    </div>
+
+    <!-- STEP 2C: First time admin — set password -->
+    <div id="login-step-setpassword" style="display:none">
+      <p style="font-size:13px;color:#64748b;margin-bottom:12px">Welcome! Set your password to continue.</p>
+      <label for="login-newpw1">New Password</label>
+      <input type="password" id="login-newpw1" placeholder="Min. 8 characters">
+      <label for="login-newpw2" style="margin-top:12px">Confirm Password</label>
+      <input type="password" id="login-newpw2" placeholder="Repeat password">
+      <div class="login-error" id="login-error-setpw"></div>
+      <button class="btn-login" onclick="doSetPassword()">Set Password & Sign In</button>
+    </div>
+
   </div>
 </div>
 
@@ -656,84 +693,166 @@ function getAllFormIds() {
 // ============================================================
 // LOGIN
 // ============================================================
-document.getElementById('login-code').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
-document.getElementById('login-username').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+document.getElementById('login-email').addEventListener('keydown', function(e){ if(e.key==='Enter') doLoginStep1(); });
+document.getElementById('login-password').addEventListener('keydown', function(e){ if(e.key==='Enter') doAdminLogin(); });
 
-function doLogin() {
-  var name = document.getElementById('login-username').value.trim();
-  var code = document.getElementById('login-code').value.trim().toUpperCase();
-  var errEl = document.getElementById('login-error');
-  var btn = document.querySelector('.btn-login');
-  if (!name) { errEl.textContent = 'Please enter your name.'; errEl.style.display = 'block'; return; }
-  if (!code) { errEl.textContent = 'Please enter an invite code.'; errEl.style.display = 'block'; return; }
-  errEl.style.display = 'none';
+var ADMIN_EMAILS = ['a.andrulis@trustprojects.eu','e.urbutis@trustprojects.eu','a.simonavicius@trustprojects.eu'];
+
+function resetLoginSteps() {
+  document.getElementById('login-step-email').style.display = 'block';
+  document.getElementById('login-step-password').style.display = 'none';
+  document.getElementById('login-step-magiclink').style.display = 'none';
+  document.getElementById('login-step-setpassword').style.display = 'none';
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('login-email').value = '';
+}
+
+function showLoginError(elId, msg) {
+  var el = document.getElementById(elId);
+  el.textContent = msg; el.style.display = 'block';
+}
+
+function doLoginStep1() {
+  var email = document.getElementById('login-email').value.trim().toLowerCase();
+  if (!email || !email.includes('@')) { showLoginError('login-error', 'Please enter a valid email address.'); return; }
+  document.getElementById('login-error').style.display = 'none';
+
+  var isAdmin = ADMIN_EMAILS.indexOf(email) >= 0;
+  document.getElementById('login-step-email').style.display = 'none';
+
+  if (isAdmin) {
+    // Check if admin has a Supabase Auth account already
+    document.getElementById('login-step-password').style.display = 'block';
+    document.getElementById('login-password').focus();
+  } else {
+    // Regular user — send magic link
+    sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: false } }).then(function(res) {
+      if (res.error) {
+        // User doesn't exist yet — check if they have an invite
+        sb.from('employees').select('id').eq('email', email).eq('active', true).single().then(function(empRes) {
+          if (empRes.error || !empRes.data) {
+            document.getElementById('login-step-email').style.display = 'block';
+            showLoginError('login-error', 'No account found for this email. Contact your administrator.');
+          } else {
+            sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: true } }).then(function() {
+              document.getElementById('magic-link-email').textContent = email;
+              document.getElementById('login-step-magiclink').style.display = 'block';
+            });
+          }
+        });
+      } else {
+        document.getElementById('magic-link-email').textContent = email;
+        document.getElementById('login-step-magiclink').style.display = 'block';
+      }
+    });
+  }
+}
+
+function doAdminLogin() {
+  var email = document.getElementById('login-email').value.trim().toLowerCase();
+  var pw = document.getElementById('login-password').value;
+  if (!pw) { showLoginError('login-error-pw', 'Please enter your password.'); return; }
+  document.getElementById('login-error-pw').style.display = 'none';
+  var btn = document.getElementById('login-step-password').querySelector('.btn-login');
   btn.disabled = true; btn.textContent = 'Signing in…';
 
-  sb.from('invites').select('*').eq('token', code).single().then(function(res) {
+  sb.auth.signInWithPassword({ email: email, password: pw }).then(function(res) {
     btn.disabled = false; btn.textContent = 'Sign In';
-    if (res.error || !res.data) {
-      errEl.textContent = 'Invalid invite code. Please try again.'; errEl.style.display = 'block'; return;
+    if (res.error) {
+      if (res.error.message.includes('Invalid login') || res.error.message.includes('Email not confirmed')) {
+        // First time — show set password screen
+        document.getElementById('login-step-password').style.display = 'none';
+        document.getElementById('login-step-setpassword').style.display = 'block';
+      } else {
+        showLoginError('login-error-pw', res.error.message);
+      }
+      return;
     }
-    var invite = res.data;
-    if (invite.used) {
-      errEl.textContent = 'This invite code has already been used.'; errEl.style.display = 'block'; return;
-    }
-    if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
-      errEl.textContent = 'This invite code has expired.'; errEl.style.display = 'block'; return;
-    }
-    var isAdmin = invite.token === 'ADMIN' || invite.role === 'admin';
-
-    // Mark invite used (non-admin only)
-    if (!isAdmin) {
-      sb.from('invites').update({ used: true, used_at: new Date().toISOString() }).eq('token', code);
-    }
-
-    // Register employee if not admin
-    var empPromise = isAdmin
-      ? Promise.resolve({ data: { id: 'admin', name: name, email: invite.email || '', company: '', forms: getAllFormIds(), role: 'admin' } })
-      : sb.from('employees').insert({ name: name, email: invite.email || '', company: invite.company || '', invite_token: code, role: 'user', active: true }).select().single();
-
-    empPromise.then(function(empRes) {
-      var emp = empRes.data || {};
-      // Load assigned forms
-      var formsPromise = isAdmin
-        ? Promise.resolve({ data: [] })
-        : sb.from('assignments').select('form_id').eq('employee_id', emp.id);
-
-      formsPromise.then(function(aRes) {
-        var assignedForms = isAdmin ? getAllFormIds() : (aRes.data || []).map(function(a){ return a.form_id; });
-        // Load all users & submissions for admin
-        var loadExtra = isAdmin
-          ? Promise.all([
-              sb.from('employees').select('*'),
-              sb.from('submissions').select('*').order('submitted_at', { ascending: false })
-            ])
-          : Promise.resolve([{ data: [] }, { data: [] }]);
-
-        loadExtra.then(function(extras) {
-          _sbUsers = extras[0].data || [];
-          _sbSubmissions = extras[1].data || [];
-
-          appState.user = name;
-          appState.employeeId = emp.id;
-          appState.userEmail = emp.email || '';
-          appState.userCompany = emp.company || '';
-          appState.isAdmin = isAdmin;
-          appState.assignedForms = assignedForms;
-          document.getElementById('user-pill').textContent = name + (isAdmin ? ' (Admin)' : '');
-          document.getElementById('nav-admin').style.display = isAdmin ? 'flex' : 'none';
-          document.getElementById('login-screen').style.display = 'none';
-          document.getElementById('app').style.display = 'flex';
-          initFormStatus();
-          buildSidebarNav();
-          initAutosave();
-          renderDashboard();
-          showPage('dashboard');
-        });
-      });
-    });
+    enterApp(res.data.user, true);
   });
 }
+
+function doSetPassword() {
+  var email = document.getElementById('login-email').value.trim().toLowerCase();
+  var pw1 = document.getElementById('login-newpw1').value;
+  var pw2 = document.getElementById('login-newpw2').value;
+  if (pw1.length < 8) { showLoginError('login-error-setpw', 'Password must be at least 8 characters.'); return; }
+  if (pw1 !== pw2) { showLoginError('login-error-setpw', 'Passwords do not match.'); return; }
+  document.getElementById('login-error-setpw').style.display = 'none';
+  var btn = document.getElementById('login-step-setpassword').querySelector('.btn-login');
+  btn.disabled = true; btn.textContent = 'Setting up…';
+
+  // Sign up admin for the first time
+  sb.auth.signUp({ email: email, password: pw1 }).then(function(res) {
+    btn.disabled = false; btn.textContent = 'Set Password & Sign In';
+    if (res.error) { showLoginError('login-error-setpw', res.error.message); return; }
+    enterApp(res.data.user, true);
+  });
+}
+
+function doForgotPassword() {
+  var email = document.getElementById('login-email').value.trim().toLowerCase();
+  if (!email) { showLoginError('login-error-pw', 'Please go back and enter your email first.'); return; }
+  sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.href }).then(function(res) {
+    if (res.error) { showLoginError('login-error-pw', res.error.message); return; }
+    showLoginError('login-error-pw', 'Password reset email sent! Check your inbox.');
+    document.getElementById('login-error-pw').style.color = '#16a34a';
+  });
+}
+
+function enterApp(authUser, isAdmin) {
+  var email = authUser.email;
+  var loadExtra = isAdmin
+    ? Promise.all([
+        sb.from('employees').select('*'),
+        sb.from('submissions').select('*').order('submitted_at', { ascending: false })
+      ])
+    : sb.from('employees').select('*').eq('email', email).eq('active', true).single().then(function(empRes) {
+        var emp = empRes.data || {};
+        return sb.from('assignments').select('form_id').eq('employee_id', emp.id).then(function(aRes) {
+          return [{ data: [] }, { data: [] }, emp, (aRes.data||[]).map(function(a){ return a.form_id; })];
+        });
+      });
+
+  loadExtra.then(function(results) {
+    if (isAdmin) {
+      _sbUsers = results[0].data || [];
+      _sbSubmissions = results[1].data || [];
+      appState.user = email.split('@')[0];
+      appState.employeeId = authUser.id;
+      appState.userEmail = email;
+      appState.isAdmin = true;
+      appState.assignedForms = getAllFormIds();
+    } else {
+      var emp = results[2] || {};
+      var assignedForms = results[3] || [];
+      appState.user = emp.name || email.split('@')[0];
+      appState.employeeId = emp.id;
+      appState.userEmail = email;
+      appState.userCompany = emp.company || '';
+      appState.isAdmin = false;
+      appState.assignedForms = assignedForms;
+    }
+    document.getElementById('user-pill').textContent = appState.user + (isAdmin ? ' (Admin)' : '');
+    document.getElementById('nav-admin').style.display = isAdmin ? 'flex' : 'none';
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    initFormStatus();
+    buildSidebarNav();
+    initAutosave();
+    renderDashboard();
+    showPage('dashboard');
+  });
+}
+
+// Handle magic link redirect (user lands back on page after clicking email link)
+sb.auth.onAuthStateChange(function(event, session) {
+  if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session && document.getElementById('login-screen').style.display !== 'none') {
+    var email = session.user.email;
+    var isAdmin = ADMIN_EMAILS.indexOf(email.toLowerCase()) >= 0;
+    enterApp(session.user, isAdmin);
+  }
+});
 
 function initFormStatus() {
   appState.formStatus = {};
@@ -741,16 +860,18 @@ function initFormStatus() {
 }
 
 function doLogout() {
+  sb.auth.signOut();
   appState.user = '';
   appState.isAdmin = false;
   appState.assignedForms = [];
   appState.formStatus = {};
   appState.currentPage = 'dashboard';
   appState.currentFormId = null;
+  _sbUsers = [];
+  _sbSubmissions = [];
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
-  document.getElementById('login-username').value = '';
-  document.getElementById('login-code').value = '';
+  resetLoginSteps();
 }
 
 // ============================================================
