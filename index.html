@@ -1,0 +1,2540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QHSE Portal</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#eef2f7;color:#1e293b;min-height:100vh}
+/* LOGIN */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#020617 0%,#0f172a 60%,#064e3b 100%)}
+.login-box{background:#fff;border-radius:16px;padding:48px 40px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.4)}
+.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:32px;justify-content:center}
+.login-logo .logo-icon{width:48px;height:48px;background:linear-gradient(135deg,#22c55e,#0ea5e9);border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;color:#fff}
+.login-logo h1{font-size:24px;font-weight:700;color:#020617}
+.login-box label{display:block;font-size:13px;font-weight:600;color:#475569;margin-bottom:6px;margin-top:18px}
+.login-box input{width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:15px;outline:none;transition:border .2s}
+.login-box input:focus{border-color:#0ea5e9}
+.login-error{color:#ef4444;font-size:13px;margin-top:10px;display:none}
+.btn-login{width:100%;margin-top:24px;padding:13px;background:linear-gradient(90deg,#22c55e,#0ea5e9);color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;transition:opacity .2s}
+.btn-login:hover{opacity:.9}
+/* APP SHELL */
+#app{display:none;min-height:100vh;flex-direction:column}
+/* TOPBAR */
+.topbar{height:60px;background:linear-gradient(90deg,#020617 0%,#065f46 50%,#0369a1 100%);display:flex;align-items:center;padding:0 20px;gap:16px;position:fixed;top:0;left:0;right:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+.topbar-logo{display:flex;align-items:center;gap:10px;color:#fff;font-weight:700;font-size:18px;min-width:200px}
+.topbar-logo .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,#22c55e,#0ea5e9);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;color:#fff}
+.topbar-spacer{flex:1}
+.user-pill{background:rgba(255,255,255,0.15);color:#fff;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:600}
+.btn-logout{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:14px;transition:background .2s}
+.btn-logout:hover{background:rgba(255,255,255,0.2)}
+.hamburger{display:none;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px 8px}
+/* LAYOUT */
+.app-body{display:flex;margin-top:60px;min-height:calc(100vh - 60px)}
+/* SIDEBAR */
+.sidebar{width:220px;background:#020617;min-height:calc(100vh - 60px);position:fixed;top:60px;left:0;bottom:0;display:flex;flex-direction:column;padding:24px 0;z-index:90;transition:transform .3s}
+.sidebar-label{font-size:11px;font-weight:700;color:#475569;padding:0 20px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;color:#94a3b8;cursor:pointer;font-size:14px;font-weight:500;transition:all .2s;border-left:3px solid transparent}
+.nav-item:hover{color:#fff;background:rgba(255,255,255,0.05)}
+.nav-item.active{color:#22c55e;border-left-color:#22c55e;background:rgba(34,197,94,0.08)}
+.nav-item.disabled{color:#334155;cursor:default;pointer-events:none}
+.nav-item .nav-icon{width:18px;text-align:center;font-size:15px}
+/* MAIN CONTENT */
+.main-content{margin-left:220px;padding:32px;flex:1;max-width:100%}
+/* DASHBOARD */
+.page-title{font-size:22px;font-weight:700;color:#020617;margin-bottom:6px}
+.page-sub{font-size:14px;color:#64748b;margin-bottom:28px}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+.form-card{background:#fff;border-radius:12px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border:1px solid #e2e8f0;transition:box-shadow .2s}
+.form-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.12)}
+.form-code{font-size:12px;font-weight:700;color:#0ea5e9;text-transform:uppercase;letter-spacing:.06em}
+.form-title{font-size:16px;font-weight:700;color:#1e293b;margin:6px 0 4px}
+.form-rev{font-size:12px;color:#94a3b8;margin-bottom:14px}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.badge-notstarted{background:#f1f5f9;color:#64748b}
+.badge-inprogress{background:#fef3c7;color:#d97706}
+.badge-completed{background:#dcfce7;color:#16a34a}
+.btn-open{margin-top:16px;width:100%;padding:10px;background:linear-gradient(90deg,#22c55e,#0ea5e9);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;transition:opacity .2s}
+.btn-open:hover{opacity:.85}
+/* FORM PAGES */
+.form-page{display:none}
+.form-page.active{display:block}
+.form-header-bar{background:#fff;border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border:1px solid #e2e8f0}
+.form-header-bar h2{font-size:20px;font-weight:700;color:#020617;margin-bottom:4px}
+.form-header-bar .form-subtitle{font-size:13px;color:#64748b}
+.header-fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-top:18px}
+.field-group{display:flex;flex-direction:column;gap:5px}
+.field-group label{font-size:12px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.05em}
+.field-group input,.field-group textarea,.field-group select{padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:14px;font-family:inherit;outline:none;transition:border .2s;background:#fff}
+.field-group input:focus,.field-group textarea:focus,.field-group select:focus{border-color:#0ea5e9}
+.field-group input.invalid,.field-group textarea.invalid{border-color:#ef4444!important}
+/* SECTION */
+.section-block{background:#fff;border-radius:12px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border:1px solid #e2e8f0;overflow:hidden}
+.section-header{padding:16px 20px;background:#f8fafc;border-bottom:1px solid #e2e8f0;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
+.section-header:hover{background:#f1f5f9}
+.section-title{font-size:15px;font-weight:700;color:#020617}
+.section-toggle{font-size:18px;color:#64748b;transition:transform .3s}
+.section-toggle.collapsed{transform:rotate(-90deg)}
+.section-body{padding:0}
+.section-body.collapsed{display:none}
+/* NOTICE BOX */
+.notice-box{background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:14px 18px;margin:16px 20px}
+.notice-box p{font-size:13px;color:#92400e;line-height:1.6;margin-bottom:6px}
+.notice-box p:last-child{margin-bottom:0}
+/* TABLES */
+.form-table{width:100%;border-collapse:collapse;font-size:13px}
+.form-table th{background:#f8fafc;padding:10px 12px;text-align:left;font-weight:600;color:#475569;border-bottom:2px solid #e2e8f0;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.form-table td{padding:8px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.form-table tr:last-child td{border-bottom:none}
+.form-table input[type=text],.form-table input[type=date],.form-table input[type=time],.form-table input[type=number],.form-table textarea{width:100%;padding:7px 9px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:13px;font-family:inherit;outline:none;background:#fff}
+.form-table input:focus,.form-table textarea:focus{border-color:#0ea5e9}
+.form-table .item-num{font-weight:700;color:#0ea5e9;white-space:nowrap;width:40px}
+.form-table .item-desc{color:#334155;min-width:160px}
+.sub-label{font-size:11px;color:#94a3b8;margin-top:2px}
+/* RADIO / CHECKBOX */
+.radio-group{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.radio-group label,.check-group label{display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;color:#334155}
+.radio-group input[type=radio],.check-group input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:#22c55e}
+.check-group{display:flex;gap:14px;flex-wrap:wrap}
+.conditional-fields{margin-top:6px;padding:8px 10px;background:#f8fafc;border-radius:6px;display:none}
+.conditional-fields.show{display:block}
+/* TABLE CONTROLS */
+.table-wrap{padding:0 0 8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.table-controls{padding:10px 16px;display:flex;gap:8px;border-top:1px solid #f1f5f9;background:#fafafa}
+.btn-add-row,.btn-remove-row{padding:6px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.btn-add-row{background:#dcfce7;color:#15803d}
+.btn-add-row:hover{background:#bbf7d0}
+.btn-remove-row{background:#fee2e2;color:#b91c1c}
+.btn-remove-row:hover{background:#fecaca}
+/* DECLARATION / FOOTER */
+.legal-warning{background:#fff7ed;border:1px solid #fb923c;border-radius:8px;padding:14px 18px;margin:16px 20px}
+.legal-warning p{font-size:13px;color:#9a3412;font-weight:600;line-height:1.6}
+/* FORM ACTIONS */
+.form-actions{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap}
+.btn-submit{padding:12px 32px;background:linear-gradient(90deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s}
+.btn-submit:hover{opacity:.85}
+.btn-print{padding:12px 32px;background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:background .2s}
+.btn-print:hover{background:#e2e8f0}
+.btn-back{padding:12px 24px;background:transparent;color:#64748b;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-back:hover{background:#f1f5f9}
+/* SUCCESS TOAST */
+.toast{position:fixed;bottom:30px;right:30px;background:#020617;color:#fff;padding:14px 24px;border-radius:10px;font-size:14px;font-weight:600;z-index:9999;display:none;box-shadow:0 8px 24px rgba(0,0,0,0.3);border-left:4px solid #22c55e}
+/* OVERLAY */
+.sidebar-overlay{display:none;position:fixed;top:60px;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:89}
+/* PRINT */
+@media print{
+  .topbar,.sidebar,.sidebar-overlay,.form-actions,.table-controls,
+  .btn-back,.btn-submit,.btn-print,.section-toggle,
+  #page-dashboard,#page-admin,.admin-tabs,.admin-info-box,
+  .sub-view-overlay,.toast,.hamburger{display:none!important}
+  #login-screen{display:none!important}
+  #app{display:block!important}
+  .app-body{display:block!important;margin-top:0!important}
+  .main-content{margin-left:0!important;padding:0!important}
+  body{background:#fff!important;font-size:11pt}
+  .form-page{display:none!important}
+  .form-page.active{display:block!important}
+  .section-body.collapsed{display:block!important}
+  .form-card,.section-block,.form-header-bar{box-shadow:none!important;border:1px solid #ccc!important;break-inside:avoid;margin-bottom:8pt}
+  .section-header{background:#f0f0f0!important;padding:8pt 10pt!important}
+  .section-title{font-size:10pt!important}
+  .print-header{display:block!important}
+  .form-table{font-size:9pt}
+  .form-table th{background:#e8e8e8!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .form-table td,.form-table th{padding:5pt 6pt!important}
+  .sig-canvas{border:1px solid #999!important;background:#fff!important}
+  .sig-clear{display:none!important}
+  .notice-box{background:#fffbeb!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .legal-warning{background:#fff7ed!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  input[type=text],input[type=date],input[type=time],input[type=number],textarea,select{border:none!important;border-bottom:1px solid #999!important;border-radius:0!important;background:transparent!important;padding:2pt 0!important;font-size:9pt}
+  .radio-group label,.check-group label{font-size:9pt}
+  .conditional-fields{display:block!important}
+  .section-block{page-break-inside:avoid}
+  .form-header-bar{page-break-after:avoid}
+  .header-fields{grid-template-columns:repeat(3,1fr)!important}
+  .sig-footer{grid-template-columns:1fr 1fr!important}
+  #page-admin{display:none!important}
+  @page{margin:15mm 12mm;size:A4}
+}
+/* RESPONSIVE */
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main-content{margin-left:0;padding:16px}
+  .hamburger{display:block}
+  .topbar-logo{min-width:unset}
+  .sidebar-overlay.open{display:block}
+  .cards-grid{grid-template-columns:1fr}
+  .header-fields{grid-template-columns:1fr}
+  .form-actions{flex-direction:column}
+  .btn-submit,.btn-print,.btn-back{width:100%;text-align:center}
+  .user-pill{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+}
+@media(max-width:480px){
+  .login-box{padding:32px 20px}
+  .radio-group{gap:8px}
+  .form-table thead{display:none}
+  .form-table tr{display:block;border-bottom:2px solid #e2e8f0;padding:10px 0}
+  .form-table td{display:block;width:100%!important;padding:4px 12px;border-bottom:none;min-width:unset}
+  .form-table td.item-num{padding-bottom:0;font-size:13px}
+  .form-table td.item-desc{padding-top:2px;padding-bottom:6px;font-size:13px;font-weight:600;color:#1e293b}
+  .form-table td input[type=text],.form-table td input[type=date],.form-table td textarea{width:100%;margin-top:4px}
+  .form-table td .radio-group{margin-top:6px;flex-direction:row;flex-wrap:wrap}
+  .form-table td .check-group{margin-top:6px}
+  .form-table td .conditional-fields{margin-top:6px}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .main-content{padding:10px}
+  .topbar-logo span,.topbar-logo{font-size:15px}
+  .section-header{padding:12px 14px}
+  .section-title{font-size:14px}
+  .notice-box{margin:10px 12px}
+  .legal-warning{margin:10px 12px}
+  .form-actions{gap:8px}
+}
+/* Sig footer */
+.sig-footer{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:20px}
+@media(max-width:600px){.sig-footer{grid-template-columns:1fr}}
+.action-table td select{width:100%;padding:6px 8px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:12px;font-family:inherit}
+.copy-checks{display:flex;flex-wrap:wrap;gap:6px}
+.copy-checks label{font-size:11px;display:flex;align-items:center;gap:3px}
+.copy-checks input{width:13px;height:13px}
+textarea{resize:vertical;min-height:60px}
+.large-textarea{min-height:100px}
+.section-inner{padding:4px 0 8px}
+/* ADMIN PANEL */
+.admin-tabs{display:flex;gap:4px;margin-bottom:20px;background:#fff;padding:6px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border:1px solid #e2e8f0;flex-wrap:wrap}
+.admin-tab{padding:8px 18px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:transparent;color:#64748b;transition:all .2s}
+.admin-tab.active{background:linear-gradient(90deg,#22c55e,#0ea5e9);color:#fff}
+.admin-tab:hover:not(.active){background:#f1f5f9}
+.admin-panel{display:none}.admin-panel.active{display:block}
+.admin-card{background:#fff;border-radius:12px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border:1px solid #e2e8f0;margin-bottom:16px}
+.admin-card h3{font-size:15px;font-weight:700;color:#020617;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f1f5f9}
+.admin-table{width:100%;border-collapse:collapse;font-size:13px}
+.admin-table th{background:#f8fafc;padding:9px 12px;text-align:left;font-weight:600;color:#475569;border-bottom:2px solid #e2e8f0;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.admin-table td{padding:9px 12px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.admin-table tr:last-child td{border-bottom:none}
+.admin-table tr:hover td{background:#f8fafc}
+.btn-sm{padding:4px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.btn-sm-blue{background:#e0f2fe;color:#0369a1}.btn-sm-blue:hover{background:#bae6fd}
+.btn-sm-red{background:#fee2e2;color:#b91c1c}.btn-sm-red:hover{background:#fecaca}
+.btn-sm-green{background:#dcfce7;color:#15803d}.btn-sm-green:hover{background:#bbf7d0}
+.btn-sm-amber{background:#fef3c7;color:#b45309}.btn-sm-amber:hover{background:#fde68a}
+.btn-sm-purple{background:#ede9fe;color:#6d28d9}.btn-sm-purple:hover{background:#ddd6fe}
+.admin-form-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:14px}
+.admin-form-row .field-group label{font-size:11px}
+.admin-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.admin-badge-active{background:#dcfce7;color:#16a34a}
+.admin-badge-inactive{background:#f1f5f9;color:#64748b}
+.assign-check{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.assign-check label{display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:#f8fafc;padding:5px 10px;border-radius:6px;border:1px solid #e2e8f0}
+.assign-check input{accent-color:#22c55e;width:14px;height:14px}
+.sub-view-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(2,6,23,0.6);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.sub-view-overlay.open{display:flex}
+.sub-view-box{background:#fff;border-radius:14px;width:100%;max-width:700px;max-height:85vh;overflow-y:auto;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,0.4)}
+.sub-view-box h3{font-size:17px;font-weight:700;margin-bottom:16px;color:#020617}
+.sub-field{margin-bottom:10px;font-size:13px;color:#334155;line-height:1.6}
+.sub-field strong{color:#020617;font-weight:600}
+.admin-info-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1e40af;line-height:1.6}
+.stat-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.stat-box{background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border:1px solid #e2e8f0;text-align:center}
+.stat-box .stat-num{font-size:28px;font-weight:800;color:#020617}
+.stat-box .stat-lbl{font-size:11px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:.04em}
+.nav-item-admin{color:#f59e0b!important}
+.nav-item-admin.active{border-left-color:#f59e0b!important;color:#f59e0b!important;background:rgba(245,158,11,0.08)!important}
+/* SIGNATURE PAD */
+.sig-pad-wrap{display:inline-flex;flex-direction:column;gap:4px;width:100%}
+.sig-pad-label{font-size:11px;color:#94a3b8}
+.sig-canvas{border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;cursor:crosshair;display:block;width:100%;touch-action:none}
+.sig-canvas.signed{border-color:#22c55e}
+.sig-pad-controls{display:flex;gap:6px;margin-top:4px}
+.sig-clear{font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;cursor:pointer}
+.sig-clear:hover{background:#fee2e2;border-color:#fca5a5;color:#b91c1c}
+/* FORM EDITOR */
+.fe-section-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:10px;overflow:hidden}
+.fe-section-header{padding:12px 16px;background:#f8fafc;display:flex;align-items:center;gap:8px;border-bottom:1px solid #e2e8f0}
+.fe-section-title{font-size:14px;font-weight:700;color:#020617;flex:1}
+.fe-type-badge{font-size:10px;font-weight:700;background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.04em}
+.fe-section-body{padding:14px 16px;display:none}
+.fe-section-body.open{display:block}
+.fe-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;padding:8px;background:#f8fafc;border-radius:6px;border:1px solid #e2e8f0}
+.fe-row input,.fe-row select,.fe-row textarea{padding:6px 8px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:12px;font-family:inherit;outline:none;background:#fff;flex:1}
+.fe-row input:focus,.fe-row select:focus{border-color:#0ea5e9}
+.fe-row label{font-size:11px;color:#64748b;white-space:nowrap;padding-top:7px}
+.fe-meta-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.fe-meta-row .field-group label{font-size:11px}
+.fe-form-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:8px}
+.fe-form-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.fe-form-card .form-code{margin-bottom:4px}
+.fe-form-card .form-title{font-size:14px;margin-bottom:2px}
+.fe-form-card .form-rev{margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="logo-icon">Q</div>
+      <h1>QHSE Portal</h1>
+    </div>
+    <label for="login-username">Username</label>
+    <input type="text" id="login-username" placeholder="Enter your name" autocomplete="off">
+    <label for="login-code">Invite Code</label>
+    <input type="text" id="login-code" placeholder="Enter invite code" autocomplete="off">
+    <div class="login-error" id="login-error">Invalid invite code. Please try again.</div>
+    <button class="btn-login" onclick="doLogin()">Sign In</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <button class="hamburger" onclick="toggleSidebar()">&#9776;</button>
+    <div class="topbar-logo">
+      <div class="logo-icon">Q</div>
+      QHSE Portal
+    </div>
+    <div class="topbar-spacer"></div>
+    <div id="autosave-indicator" style="display:none;align-items:center;gap:5px;font-size:12px;color:rgba(255,255,255,0.75)">
+      <span id="autosave-dot" style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;flex-shrink:0"></span>
+      <span id="autosave-text">Draft saved</span>
+    </div>
+    <div class="user-pill" id="user-pill">User</div>
+    <button class="btn-logout" onclick="doLogout()">Logout</button>
+  </div>
+
+  <!-- PRINT HEADER -->
+  <div class="print-header" style="display:none;padding:0 0 10pt 0;border-bottom:2pt solid #000;margin-bottom:10pt">
+    <table style="width:100%;border-collapse:collapse">
+      <tr>
+        <td style="font-size:14pt;font-weight:800;color:#000" id="ph-title">QHSE Portal</td>
+        <td style="text-align:right;font-size:9pt;color:#444">
+          <div id="ph-code" style="font-weight:700;font-size:11pt"></div>
+          <div id="ph-user"></div>
+          <div id="ph-date"></div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="app-body">
+    <!-- SIDEBAR OVERLAY -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-label">Navigation</div>
+      <div class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')">
+        <span class="nav-icon">&#9646;</span> Dashboard
+      </div>
+      <div id="sidebar-form-links"></div>
+      <div class="sidebar-label" style="margin-top:24px">System</div>
+      <div class="nav-item nav-item-admin" id="nav-admin" onclick="showPage('admin')" style="display:none">
+        <span class="nav-icon">&#9881;</span> Admin Panel
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content" id="main-content">
+
+      <!-- DASHBOARD -->
+      <div id="page-dashboard" class="form-page active">
+        <div class="page-title" id="dash-title">Dashboard</div>
+        <div class="page-sub" id="dash-sub">Select a form below to begin or continue.</div>
+        <div class="cards-grid" id="dashboard-cards"></div>
+      </div>
+
+      <!-- DYNAMIC FORM CONTAINER -->
+      <div id="page-form" class="form-page">
+        <div id="form-container"></div>
+      </div>
+
+      <!-- ADMIN PAGE -->
+      <div id="page-admin" class="form-page">
+        <div class="page-title">Admin Panel</div>
+        <div class="page-sub">Manage users, form assignments, and view submissions.</div>
+
+        <div class="admin-info-box">
+          Data is stored locally and submitted to SharePoint. Configure your SharePoint site URL in the <strong>Settings</strong> tab.
+        </div>
+
+        <div class="stat-row">
+          <div class="stat-box"><div class="stat-num" id="stat-users">0</div><div class="stat-lbl">Users</div></div>
+          <div class="stat-box"><div class="stat-num" id="stat-submissions">0</div><div class="stat-lbl">Submissions</div></div>
+          <div class="stat-box"><div class="stat-num" id="stat-pending">0</div><div class="stat-lbl">Pending</div></div>
+          <div class="stat-box"><div class="stat-num" id="stat-completed">0</div><div class="stat-lbl">Completed</div></div>
+        </div>
+
+        <div class="admin-tabs">
+          <button class="admin-tab active" onclick="showAdminTab('users',event)">Users</button>
+          <button class="admin-tab" onclick="showAdminTab('assignments',event)">Assignments</button>
+          <button class="admin-tab" onclick="showAdminTab('submissions',event)">Submissions</button>
+          <button class="admin-tab" onclick="showAdminTab('formeditor',event)">Form Editor</button>
+          <button class="admin-tab" onclick="showAdminTab('settings',event)">Settings</button>
+        </div>
+
+        <!-- TAB: USERS -->
+        <div class="admin-panel active" id="admin-tab-users">
+          <div class="admin-card">
+            <h3>Add New User</h3>
+            <div class="admin-form-row">
+              <div class="field-group"><label>Full Name *</label><input type="text" id="new-user-name" placeholder="John Smith"></div>
+              <div class="field-group"><label>Email / Contact</label><input type="text" id="new-user-email" placeholder="john@company.com"></div>
+              <div class="field-group"><label>Role</label>
+                <select id="new-user-role">
+                  <option value="Worker">Worker</option>
+                  <option value="Foreman">Foreman</option>
+                  <option value="Project Coordinator">Project Coordinator</option>
+                  <option value="SHEQ Coordinator">SHEQ Coordinator</option>
+                  <option value="Manager">Manager</option>
+                  <option value="Client">Client</option>
+                </select>
+              </div>
+              <div class="field-group"><label>Invite Code *</label><input type="text" id="new-user-code" placeholder="e.g. SMITH001" style="text-transform:uppercase"></div>
+            </div>
+            <div style="margin-bottom:10px">
+              <div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">Assign Forms</div>
+              <div class="assign-check" id="new-user-forms"></div>
+            </div>
+            <div class="field-group" style="max-width:200px;margin-bottom:14px">
+              <label>Deadline (optional)</label>
+              <input type="date" id="new-user-deadline">
+            </div>
+            <button class="btn-submit" style="font-size:13px;padding:9px 22px" onclick="adminAddUser()">Add User</button>
+          </div>
+          <div class="admin-card">
+            <h3>User List</h3>
+            <div style="overflow-x:auto">
+              <table class="admin-table" id="users-table">
+                <thead><tr><th>Name</th><th>Role</th><th>Invite Code</th><th>Assigned Forms</th><th>Deadline</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="users-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: ASSIGNMENTS -->
+        <div class="admin-panel" id="admin-tab-assignments">
+          <div class="admin-card">
+            <h3>Edit User Assignments</h3>
+            <p style="font-size:13px;color:#64748b;margin-bottom:14px">Select a user to update their assigned forms and deadline.</p>
+            <div class="field-group" style="max-width:260px;margin-bottom:16px">
+              <label>Select User</label>
+              <select id="assign-user-select" onchange="loadAssignmentEditor()">
+                <option value="">-- Select user --</option>
+              </select>
+            </div>
+            <div id="assignment-editor" style="display:none">
+              <div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">Assigned Forms</div>
+              <div class="assign-check" id="assign-forms-checks"></div>
+              <div class="field-group" style="max-width:200px;margin-top:14px;margin-bottom:14px">
+                <label>Deadline</label>
+                <input type="date" id="assign-deadline">
+              </div>
+              <button class="btn-submit" style="font-size:13px;padding:9px 22px" onclick="saveAssignment()">Save Assignment</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: SUBMISSIONS -->
+        <div class="admin-panel" id="admin-tab-submissions">
+          <div class="admin-card">
+            <h3>Submission Tracker</h3>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+              <div class="field-group" style="min-width:180px">
+                <label>Filter by Form</label>
+                <select id="filter-form" onchange="renderSubmissions()">
+                  <option value="">All Forms</option>
+                </select>
+              </div>
+              <div class="field-group" style="min-width:180px">
+                <label>Filter by User</label>
+                <select id="filter-user" onchange="renderSubmissions()">
+                  <option value="">All Users</option>
+                </select>
+              </div>
+              <button class="btn-sm btn-sm-red" style="margin-top:18px" onclick="clearAllSubmissions()">Clear All Submissions</button>
+            </div>
+            <div style="overflow-x:auto">
+              <table class="admin-table">
+                <thead><tr><th>User</th><th>Form</th><th>Submitted At</th><th>Project</th><th>View</th></tr></thead>
+                <tbody id="submissions-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="admin-card">
+            <h3>Assignment Status Overview</h3>
+            <div style="overflow-x:auto">
+              <table class="admin-table">
+                <thead><tr><th>User</th><th>Role</th><th>F2250</th><th>F2251</th><th>F3210</th><th>F2254</th><th>F3230</th><th>Deadline</th></tr></thead>
+                <tbody id="overview-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: FORM EDITOR -->
+        <div class="admin-panel" id="admin-tab-formeditor">
+          <div id="fe-list-view">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <h3 style="font-size:16px;font-weight:700;color:#020617">Form Configurations</h3>
+              <button class="btn-sm btn-sm-red" onclick="resetAllFormConfigs()" style="font-size:11px">Reset All to Default</button>
+            </div>
+            <div class="fe-form-list" id="fe-form-cards"></div>
+          </div>
+          <div id="fe-editor-view" style="display:none">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+              <button class="btn-back" onclick="feShowList()" style="padding:8px 16px;font-size:13px">&#8592; Back to Forms</button>
+              <span style="font-size:16px;font-weight:700;color:#020617" id="fe-editor-title">Editing Form</span>
+            </div>
+            <div class="admin-card">
+              <h3>Form Metadata</h3>
+              <div class="fe-meta-row">
+                <div class="field-group"><label>Form ID</label><input type="text" id="fe-meta-id" readonly style="background:#f8fafc;color:#94a3b8"></div>
+                <div class="field-group"><label>Title</label><input type="text" id="fe-meta-title" oninput="feMetaChange()"></div>
+                <div class="field-group"><label>Code</label><input type="text" id="fe-meta-code" oninput="feMetaChange()"></div>
+                <div class="field-group"><label>Revision</label><input type="text" id="fe-meta-rev" oninput="feMetaChange()"></div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+                <button class="btn-sm btn-sm-red" onclick="feResetForm()">Reset to Default</button>
+              </div>
+            </div>
+            <div class="admin-card">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <h3 style="margin-bottom:0;padding-bottom:0;border-bottom:none">Sections</h3>
+                <button class="btn-sm btn-sm-green" onclick="feAddSection()">+ Add Section</button>
+              </div>
+              <div id="fe-sections-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: SETTINGS -->
+        <div class="admin-panel" id="admin-tab-settings">
+          <div class="admin-card">
+            <h3>SharePoint Connection</h3>
+            <div style="margin-bottom:12px;font-size:13px;color:#64748b">
+              Enter your SharePoint site URL. Submissions will be saved directly to <strong>QSHE_FormSubmissions</strong> list.
+            </div>
+            <div class="admin-form-row" style="align-items:flex-end">
+              <div class="field-group" style="flex:1">
+                <label>SharePoint Site URL</label>
+                <input type="url" id="sp-site-url" placeholder="https://trustsubcontracting.sharepoint.com/sites/QHSE" style="font-size:13px">
+              </div>
+              <button class="btn-sm btn-sm-green" onclick="saveSpSettings()" style="height:38px;padding:0 18px;font-size:13px">Save</button>
+              <button class="btn-sm btn-sm-blue" onclick="testSpConnection()" style="height:38px;padding:0 18px;font-size:13px">Test Connection</button>
+            </div>
+            <div id="sp-status" style="margin-top:10px;font-size:13px;display:none"></div>
+          </div>
+          <div class="admin-card">
+            <h3>Connection Status</h3>
+            <div id="sp-connection-info" style="font-size:13px;color:#64748b">No SharePoint URL configured yet.</div>
+          </div>
+        </div>
+
+      </div><!-- end page-admin -->
+
+      <!-- SUBMISSION VIEWER OVERLAY -->
+      <div class="sub-view-overlay" id="sub-view-overlay">
+        <div class="sub-view-box">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 id="sub-view-title">Submission Detail</h3>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn-sm btn-sm-blue" id="sub-view-print-btn">Print / Save PDF</button>
+              <button class="btn-sm btn-sm-green" id="sub-view-email-btn">Send by Email</button>
+              <button class="btn-sm btn-sm-red" onclick="closeSubView()">Close</button>
+            </div>
+          </div>
+          <div id="sub-view-body"></div>
+        </div>
+      </div>
+
+    </div><!-- end main-content -->
+  </div><!-- end app-body -->
+</div><!-- end app -->
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// DEFAULT FORM CONFIGS (embedded from JSON files)
+// ============================================================
+var DEFAULT_FORM_CONFIGS = {
+  f2250: {"id":"f2250","code":"F2250","title":"Instruction Project Safety","revision":"R5","headerFields":[{"id":"f2250-project","label":"Project *","type":"text","placeholder":"Project name"},{"id":"f2250-date","label":"Date *","type":"date"},{"id":"f2250-organizer","label":"Organized by *","type":"text","placeholder":"Name"}],"sections":[{"title":"Attendees","type":"attendee-table","tbodyId":"f2250-attendees-body"},{"title":"Instructions","type":"notice","items":["This form must be completed before any work commences on site. Ensure all attendees are present and accounted for.","The organizer is responsible for ensuring all topics are covered and that attendees understand the safety requirements.","All signatures must be obtained before the form is submitted. Unsigned forms are not valid.","A copy of this completed form must be kept on site and made available to the client and QSHE manager upon request."]},{"title":"Section 1 — Topics & Safety Introduction","type":"topic-comment-table","rows":[{"num":"1.1","label":"Safety introduction or film at the gate","subLabel":"Date?","placeholder":"Comment / Date"},{"num":"1.2","label":"Types of alarms and emergency response plan","subLabel":"How many types?","placeholder":"Comment / Number of types"},{"num":"1.3","label":"Evacuation (assembly point)","subLabel":"Gate/Location?","placeholder":"Comment / Location"},{"num":"1.4","label":"What to do in event of fire","placeholder":"Comment"},{"num":"1.5","label":"Do you know what to do after a (near) accident?","subLabel":"Who do you report to?","placeholder":"Comment / Reporter"},{"num":"1.6","label":"First aid facilities","subLabel":"Where?","placeholder":"Comment / Location"},{"num":"1.7","label":"Last Minute Risk Assessment (LMRA)","subLabel":"When is it done?","placeholder":"Comment / When"}]},{"title":"Section 2 — Risks & Work Permit System","type":"yesno-table","rows":[{"num":"2.1","label":"Work permit system explained?","radioName":"s2_1"},{"num":"2.2","label":"Working at height?","radioName":"s2_2","condId":"cond_2_2","condOptions":["Work permit applied","Procedure explained"]},{"num":"2.3","label":"Working with chemicals?","radioName":"s2_3","condId":"cond_2_3","condOptions":["Work permit applied","Procedure explained"]},{"num":"2.4","label":"Hot work (fire/explosion risk)?","radioName":"s2_4","condId":"cond_2_4","condOptions":["Work permit applied","Procedure explained"]},{"num":"2.5","label":"Working with electrical voltage?","radioName":"s2_5","condId":"cond_2_5","condOptions":["Work permit applied","Procedure explained"]},{"num":"2.6","label":"Working in confined space?","radioName":"s2_6","condId":"cond_2_6","condOptions":["Work permit applied","Procedure explained"]},{"num":"2.7","label":"Excavation work?","radioName":"s2_7","condId":"cond_2_7","condOptions":["Work permit applied","Procedure explained"]},{"num":"2.8","label":"Garbage recycling","alwaysCheckboxes":["Procedure explained"]},{"num":"2.9","label":"Procedure for possible pollution","alwaysCheckboxes":["Procedure explained"]},{"num":"2.10","label":"Procedure for determining unsafe situations","alwaysCheckboxes":["Procedure explained"]},{"num":"2.11","label":"Other","responseText":true,"placeholder":"Describe"}]},{"title":"Section 3 — Acknowledgment","type":"statement-table","rows":[{"num":"3.1","label":"All relevant work permits have been issued","radioName":"s3_1"},{"num":"3.2","label":"All safety procedures have been explained","radioName":"s3_2"}]},{"title":"Section 4 — Other Important Project Related Aspects","type":"topic-details-table","rows":[{"num":"4.1","label":"Regulations regarding smoking","detailsPlaceholder":"Is there a designated smoking area?"},{"num":"4.2","label":"Standard PPE — helmet, shoes, work clothes, glasses"},{"num":"4.3","label":"Special PPE — hearing protection necessary","detailsPlaceholder":"Name it, if applicable"},{"num":"4.4","label":"Special tools instruction","specialToolsRow":true},{"num":"4.5","label":"Welding equipment"},{"num":"4.6","label":"Access control site/location","detailsPlaceholder":"Gate/location?"},{"num":"4.7","label":"Denial of access / restricted zones","detailsPlaceholder":"Are there restricted zones?"},{"num":"4.8","label":"Work and rest","detailsPlaceholder":"Working hours / how many breaks?"},{"num":"4.9","label":"Policy Statement TRUST","detailsPlaceholder":"Have you received it and read it?"},{"num":"4.10","label":"TRUST procedure for deviations (Form F3230)"}]},{"title":"Section 5 — Additional Instructions","type":"free-fields","fields":[{"label":"Additional Instructions","type":"textarea","large":true,"placeholder":"Enter any additional instructions here..."},{"label":"Attachments","type":"text","placeholder":"List attached documents"}]},{"title":"Declaration","type":"declaration-table","tbodyId":"f2250-decl-body","declarationText":"Below present hereby declare to have given instruction understood and accompanied to act.","legalText":"Please note that failure to comply with the instruction given will lead to appropriate action, whereby resignation can not be excluded."}]},
+  f2251: {"id":"f2251","code":"F2251","title":"Report Toolbox Meeting","revision":"R2","headerFields":[{"id":"f2251-project","label":"Project *","type":"text","placeholder":"Project name"},{"id":"f2251-date","label":"Date *","type":"date"},{"id":"f2251-provider","label":"Provided by *","type":"text","placeholder":"Name"}],"sections":[{"title":"Attendees","type":"attendee-table","tbodyId":"f2251-attendees-body"},{"title":"Topics Covered","type":"free-fields","fields":[{"label":"Topics covered:","type":"textarea","large":true,"placeholder":"Describe the topics covered during the toolbox meeting..."},{"label":"By:","type":"text","placeholder":"Presented by"}]},{"title":"Actions","type":"free-fields","fields":[{"label":"Actions:","type":"textarea","large":true,"placeholder":"List any actions agreed upon during the meeting..."}]},{"title":"Notes","type":"free-fields","fields":[{"label":"Notes pursuant to annex:","type":"textarea","large":true,"placeholder":"Additional notes..."}]}]},
+  f3210: {"id":"f3210","code":"F3210","title":"Work Place Inspection Report","revision":"R4","headerFields":[{"id":"f3210-project","label":"Project Number *","labelSuffix":" (Ask your project administrator / coordinator)","type":"text","placeholder":"Project number"},{"id":"f3210-date","label":"Date *","type":"date"},{"id":"f3210-location","label":"Project Location","type":"text","placeholder":"Location"},{"id":"f3210-completedby","label":"Completed by *","type":"text","placeholder":"Name"},{"id":"f3210-client","label":"Client","type":"text","placeholder":"Client name"},{"id":"f3210-inspectedby","label":"Inspected by","type":"text","placeholder":"Inspector name"}],"sections":[{"title":"Instructions","type":"notice","items":["This inspection form must be completed during or immediately after the workplace inspection.","For each item, select YES, NO or N/A as applicable. Provide comments where required or where deviations are noted.","All actions identified must be logged in the Action List at the bottom of this form with a responsible person and target date.","The completed form must be signed, dated and submitted to the QSHE manager within 24 hours of the inspection."]},{"title":"Section 1 — Work Environment","type":"inspection-table","rows":[{"num":"1.1","label":"Alerting and directions","subLabel":"Which signs or evacuation routes are visible or missing?","response":"yes-no-na","radioName":"f3_1_1"},{"num":"1.2","label":"First aid and fire extinguishing equipment","subLabel":"Which first aid and fire prevention equipment is accessible?","response":"yes-no-na","radioName":"f3_1_2"},{"num":"1.3","label":"Order and cleanliness","subLabel":"Identify obstacles in work area","response":"yes-no-na","radioName":"f3_1_3"},{"num":"1.4","label":"Measures against risk of falling","subLabel":"Tasks with fall risk - preventive measures?","response":"yes-no-na","radioName":"f3_1_4"},{"num":"1.5","label":"Deposition pits and trenches (confined space)","subLabel":"Entry procedures, monitoring and ventilation in place?","response":"yes-no-na","radioName":"f3_1_5"},{"num":"1.6","label":"No danger of falling objects","subLabel":"Identify overhead loads, suspended equipment or materials","response":"yes-no-na","radioName":"f3_1_6"},{"num":"1.7","label":"Adequate lighting","subLabel":"Are all work areas adequately illuminated?","response":"yes-no","radioName":"f3_1_7"},{"num":"1.8","label":"Adequate storage of materials/equipment","subLabel":"Are materials stored safely, segregated and stable?","response":"yes-no","radioName":"f3_1_8"},{"num":"1.9","label":"Road safety/transportation","subLabel":"What is the speed limit on site?","response":"yes-no-na","radioName":"f3_1_9","commentsPlaceholder":"Comments / Speed limit"}]},{"title":"Section 2 — Training, Instruction and Consultation","type":"inspection-table","responseColWidth":"180px","rows":[{"num":"2.1","label":"RI&E presence","response":"custom-radio","radioName":"f3_2_1","radioOptions":["RI&E","TRA","LMRA","Other"]},{"num":"2.2","label":"Project safety instructions","response":"custom-radio","radioName":"f3_2_2","radioOptions":["YES","NO (General)"]},{"num":"2.3","label":"Work permit(s)","response":"yes-no-plus-text","radioName":"f3_2_3","radioOptions":["YES","No permit required"],"extraPlaceholder":"Work type"},{"num":"2.4","label":"Information on hazardous substances","subLabel":"Signs; MSDS","response":"yes-no","radioName":"f3_2_4"},{"num":"2.5","label":"Consultation with client/(sub)contractor","subLabel":"Who do you consult with?","response":"text","placeholder":"Contact person(s)"},{"num":"2.6","label":"Required training/certificates","response":"yes-no-cond-text","radioName":"f3_2_6","condId":"cond_f3_2_6","condTrigger":"no","condPlaceholder":"Required:"}]},{"title":"Section 3 — Work Equipment","type":"inspection-table","responseColWidth":"140px","rows":[{"num":"3.1a","label":"Which equipment mostly being used","response":"full-width-text","placeholder":"List main equipment"},{"num":"3.1b","label":"Good condition of work equipment","subLabel":"Visual inspection - any visible damages?","response":"yes-no","radioName":"f3_3_1b"},{"num":"3.2","label":"Testing/inspection of equipment","subLabel":"How is inspection due date identified?","response":"text","placeholder":"Method"},{"num":"3.3","label":"Correct use of work equipment","subLabel":"Are you convinced your team is competent?","response":"yes-no","radioName":"f3_3_3"},{"num":"3.4","label":"Availability of user instructions","response":"yes-no","radioName":"f3_3_4"}]},{"title":"Section 4 — Personal Protective Equipment","type":"inspection-table","responseColWidth":"140px","rows":[{"num":"4.1","label":"Appropriate PPE","subLabel":"Is your PPE suitable for the job?","response":"yes-no","radioName":"f3_4_1"},{"num":"4.2","label":"Correct use of PPE","subLabel":"Buddy check?","response":"yes-no","radioName":"f3_4_2"},{"num":"4.3","label":"Condition and periodic inspection","subLabel":"What do you do if PPE is damaged or overdue?","response":"text","placeholder":"Procedure"}]},{"title":"Section 5 — Environment and Hygiene","type":"inspection-table","responseColWidth":"140px","rows":[{"num":"5.1","label":"Dining space","subLabel":"What are the requirements for dining space entry?","response":"text","placeholder":"Requirements"},{"num":"5.2","label":"Toilet and hygiene facilities","response":"yes-no","radioName":"f3_5_2"},{"num":"5.3","label":"Waste and recycling","subLabel":"Is there waste sorting containers on site?","response":"yes-no","radioName":"f3_5_3"},{"num":"5.5","label":"Storage of hazardous materials","subLabel":"How do you recognize a hazardous material storage area?","response":"text","placeholder":"Identification method"},{"num":"5.6","label":"Compliance with special environmental/hygiene rules","response":"yes-no","radioName":"f3_5_6"},{"num":"5.7","label":"Compliance with smoking regulations","subLabel":"Is there a smoking area at the project?","response":"yes-no","radioName":"f3_5_7","commentsPlaceholder":"Comments / Location"}]},{"title":"Section 6 — Additional Project Specific Control Points","type":"custom6-table","rows":[{"num":"6.1"},{"num":"6.2"},{"num":"6.3"},{"num":"6.4"}]},{"title":"Action List","type":"action-table","tbodyId":"f3210-actions-body"},{"title":"Signatures","type":"signatures"}]},
+  f2254: {"id":"f2254","code":"F2254","title":"LMRA — Start Work Checklist","revision":"R4","subtitle":"Last Minute Risk Analysis — CHECK > THINK > START","headerFields":[{"id":"f2254-project","label":"Project *","type":"text","placeholder":"Project name"},{"id":"f2254-date","label":"Date *","type":"date"},{"id":"f2254-name","label":"Name *","type":"text","placeholder":"Your full name"},{"id":"f2254-company","label":"Company","type":"text","placeholder":"Company name"}],"sections":[{"title":"Instructions","type":"notice","items":["If all questions are answered with YES — you can start the work.","If NOT all questions are answered with YES — DO NOT start the work and go to your supervisor immediately."]},{"title":"Safety Checklist","type":"lmra-table","warningId":"f2254-warning","warningText":"One or more answers are NO. Do NOT start work — report to your supervisor immediately.","rows":[{"num":"1","radioName":"f2254-q1","label":"Do I know what the work is, and have I understood everything?"},{"num":"2","radioName":"f2254-q2","label":"Do I know what can go wrong?"},{"num":"3","radioName":"f2254-q3","label":"Do I know what to do when something is going wrong?"},{"num":"4","radioName":"f2254-q4","label":"Do I know where to go in case of emergency? Emergency exits? Wind direction? Fire extinguishers?"},{"num":"5","radioName":"f2254-q5","label":"Is my workplace tidy? Is the emergency exit / way free?"},{"num":"6","radioName":"f2254-q6","label":"Do I have the right PPE for this job?"},{"num":"7","radioName":"f2254-q7","label":"Do I have the right tools for this job?"},{"num":"8","radioName":"f2254-q8","label":"Is the working area secured and safe to start working for yourself and your colleagues around you?"}]}]},
+  f3230: {"id":"f3230","code":"F3230","title":"Non-Conformity Report","revision":"R4","subtitle":"Is TRUST Group management informed?","headerFields":[{"id":"f3230-date-nc","label":"Date NC *","type":"date"},{"id":"f3230-time-nc","label":"Time NC","type":"time"},{"id":"f3230-report-date","label":"Reporting Date *","type":"date"},{"id":"f3230-reported-by","label":"Reported By *","type":"text","placeholder":"Full name"},{"id":"f3230-project","label":"Project / Client *","type":"text","placeholder":"Project name / Client"},{"id":"f3230-company","label":"Company","type":"text","placeholder":"Company name"}],"sections":[{"title":"Non-Conformity Type","type":"checkbox-grid","fieldName":"f3230-type","options":["Incident, near miss","Accident (with injury)","Suggestion for improvement","Environmental damage","Supplier non-conformity","Complaint","Unsafe condition","Non-conformity","Stolen / broken tools","Unsafe behavior","Findings from Inspection","Positive Observation"]},{"title":"Person(s) Involved or Witness","type":"persons-table","persons":3,"fields":[{"label":"Name","placeholder":"Full name"},{"label":"Function","placeholder":"Function / role"},{"label":"Personnel Nr.","placeholder":"Personnel number"},{"label":"Employed by","placeholder":"Employer"}]},{"title":"Description of the Situation","type":"free-fields","fields":[{"id":"f3230-description","label":"What happened? Where? When? Who was involved? (Add drawing or photos if necessary)","type":"textarea","large":true,"placeholder":"Describe the situation in detail..."}]},{"title":"Root Cause / Reason","type":"free-fields","fields":[{"id":"f3230-rootcause","label":"What caused it / reason","type":"textarea","large":true,"placeholder":"Describe the root cause..."}]},{"title":"Measures and Equipment","type":"free-fields","fields":[{"id":"f3230-ppe","label":"Personal Protective Equipment used","type":"text","placeholder":"List PPE used"},{"id":"f3230-tools","label":"Tools or electrical tools used","type":"text","placeholder":"List tools / equipment"},{"id":"f3230-preventive","label":"Preventive measures taken in advance","type":"text","placeholder":"Describe preventive measures"}]},{"title":"Consequence and Injury","type":"consequence-table","groups":[{"label":"Consequence","fieldName":"f3230-consequence","options":["None","Injury","Sick leave","Death","Material damage","Damage to third parties","Environmental damage","Warning","Disciplinary action"]},{"label":"Treatment","fieldName":"f3230-treatment","options":["N/A","First aid at location","Medical treatment (hospital)","Hospitalization"]},{"label":"Place of Injury","fieldName":"f3230-injury-place","options":["Head","Body","Hand (R/L)","Feet (R/L)","Arm (R/L)","Leg (R/L)","Eye (R/L)","N/A"]},{"label":"Kind of Injury","fieldName":"f3230-injury-kind","options":["Cut","Abrasion","Burn","Sprain","Fracture","Intoxication","Poisoning","N/A"]}],"extraFields":[{"id":"f3230-transported","label":"Transported by","type":"text","placeholder":"Transport details"},{"id":"f3230-sickhours","label":"Number of sick leave hours","type":"number","placeholder":"Hours","min":0}]},{"title":"Investigation and Notification","type":"investigation-table","rows":[{"label":"Root cause investigation mandatory? (see F3230.1)","radioName":"f3230-investigation","options":["Yes","No"]},{"label":"Notification Labor Inspection (by SHEQ coordinator)?","radioName":"f3230-notify-labor","options":["Yes","No"]},{"label":"Notification competent authority (by SHEQ coordinator)?","radioName":"f3230-notify-auth","options":["Yes","No"]},{"label":"When notifying Labor Inspection — Date & Time","type":"datetime","dateId":"f3230-notify-date","timeId":"f3230-notify-time"}]},{"title":"Signatures","type":"signatures-named","note":"Form to be forwarded according to signing list.","roles":["Foreman","Person affected","Project Coordinator","TPS Management","SHEQ Coordinator","Client (if agreed)"]}]}
+};
+
+// ============================================================
+// FORM CONFIG STORAGE
+// ============================================================
+function getFormConfigs() {
+  try {
+    var stored = JSON.parse(localStorage.getItem('qhse_form_configs'));
+    if (stored && typeof stored === 'object' && Object.keys(stored).length > 0) return stored;
+  } catch(e) {}
+  // Seed from defaults
+  saveFormConfigs(DEFAULT_FORM_CONFIGS);
+  return JSON.parse(JSON.stringify(DEFAULT_FORM_CONFIGS));
+}
+
+function saveFormConfigs(configs) {
+  localStorage.setItem('qhse_form_configs', JSON.stringify(configs));
+}
+
+// ============================================================
+// STATE
+// ============================================================
+var appState = {
+  user: '',
+  userEmail: '',
+  userCompany: '',
+  isAdmin: false,
+  assignedForms: [],
+  formStatus: {},
+  currentPage: 'dashboard',
+  currentFormId: null
+};
+
+// ============================================================
+// LOCAL STORAGE HELPERS
+// ============================================================
+function lsGet(key) { try { return JSON.parse(localStorage.getItem('qhse_' + key)); } catch(e) { return null; } }
+function lsSet(key, val) { localStorage.setItem('qhse_' + key, JSON.stringify(val)); }
+function getUsers() { return lsGet('users') || []; }
+function saveUsers(u) { lsSet('users', u); }
+function getSubmissions() { return lsGet('submissions') || []; }
+function saveSubmissions(s) { lsSet('submissions', s); }
+
+// ============================================================
+// FORM META HELPERS
+// ============================================================
+function getFormMeta(formId) {
+  var configs = getFormConfigs();
+  var f = configs[formId];
+  if (!f) return { code: formId.toUpperCase(), title: formId, rev: '' };
+  return { code: f.code || formId.toUpperCase(), title: f.title || formId, rev: f.revision || '' };
+}
+
+function getAllFormIds() {
+  return Object.keys(getFormConfigs());
+}
+
+// ============================================================
+// LOGIN
+// ============================================================
+document.getElementById('login-code').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+document.getElementById('login-username').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+
+function doLogin() {
+  var name = document.getElementById('login-username').value.trim();
+  var code = document.getElementById('login-code').value.trim().toUpperCase();
+  var errEl = document.getElementById('login-error');
+  if (!name) { errEl.textContent = 'Please enter your name.'; errEl.style.display = 'block'; return; }
+  if (!code) { errEl.textContent = 'Please enter an invite code.'; errEl.style.display = 'block'; return; }
+
+  if (code === 'ADMIN2025') {
+    errEl.style.display = 'none';
+    appState.user = name;
+    appState.isAdmin = true;
+    appState.assignedForms = getAllFormIds();
+    document.getElementById('user-pill').textContent = name + ' (Admin)';
+    document.getElementById('nav-admin').style.display = 'flex';
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    initFormStatus();
+    buildSidebarNav();
+    initAutosave();
+    renderDashboard();
+    showPage('dashboard');
+    return;
+  }
+
+  var users = getUsers();
+  var found = null;
+  for (var i = 0; i < users.length; i++) {
+    if (users[i].code === code && users[i].active) { found = users[i]; break; }
+  }
+  if (!found) { errEl.style.display = 'block'; errEl.textContent = 'Invalid or unrecognized invite code.'; return; }
+
+  errEl.style.display = 'none';
+  appState.user = found.name;
+  appState.userEmail = found.email || '';
+  appState.userCompany = found.company || '';
+  appState.isAdmin = false;
+  appState.assignedForms = found.forms || [];
+  document.getElementById('user-pill').textContent = found.name;
+  document.getElementById('nav-admin').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  initFormStatus();
+  buildSidebarNav();
+  initAutosave();
+  renderDashboard();
+  showPage('dashboard');
+}
+
+function initFormStatus() {
+  appState.formStatus = {};
+  getAllFormIds().forEach(function(fid){ appState.formStatus[fid] = 'Not Started'; });
+}
+
+function doLogout() {
+  appState.user = '';
+  appState.isAdmin = false;
+  appState.assignedForms = [];
+  appState.formStatus = {};
+  appState.currentPage = 'dashboard';
+  appState.currentFormId = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-username').value = '';
+  document.getElementById('login-code').value = '';
+}
+
+// ============================================================
+// SIDEBAR NAV — BUILT DYNAMICALLY
+// ============================================================
+function buildSidebarNav() {
+  var configs = getFormConfigs();
+  var container = document.getElementById('sidebar-form-links');
+  container.innerHTML = '';
+  Object.keys(configs).forEach(function(fid) {
+    var f = configs[fid];
+    var div = document.createElement('div');
+    div.className = 'nav-item';
+    div.id = 'nav-' + fid;
+    div.setAttribute('onclick', "showPage('" + fid + "')");
+    div.innerHTML = '<span class="nav-icon">&#9646;</span> ' + esc(f.code) + ' ' + esc(f.title).substring(0, 22);
+    container.appendChild(div);
+  });
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard() {
+  var configs = getFormConfigs();
+  var forms = appState.isAdmin ? Object.keys(configs) : appState.assignedForms;
+  var grid = document.getElementById('dashboard-cards');
+  grid.innerHTML = '';
+
+  // Show/hide nav items
+  Object.keys(configs).forEach(function(fid) {
+    var n = document.getElementById('nav-' + fid);
+    if (!n) return;
+    n.style.display = (forms.indexOf(fid) >= 0) ? 'flex' : 'none';
+  });
+
+  if (!forms || forms.length === 0) {
+    grid.innerHTML = '<p style="color:#64748b;font-size:14px">No forms have been assigned to you yet. Contact your administrator.</p>';
+    return;
+  }
+
+  forms.forEach(function(fid) {
+    var f = configs[fid];
+    if (!f) return;
+    var status = appState.formStatus[fid] || 'Not Started';
+    var badgeCls = status === 'Completed' ? 'badge-completed' : status === 'In Progress' ? 'badge-inprogress' : 'badge-notstarted';
+    var card = document.createElement('div');
+    card.className = 'form-card';
+    card.innerHTML = '<div class="form-code">' + esc(f.code) + '</div>' +
+      '<div class="form-title">' + esc(f.title) + '</div>' +
+      '<div class="form-rev">' + esc(f.revision || '') + '</div>' +
+      '<span class="badge ' + badgeCls + '" id="badge-' + fid + '">' + status + '</span>' +
+      '<button class="btn-open" onclick="showPage(\'' + fid + '\')">Open Form</button>';
+    grid.appendChild(card);
+  });
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showPage(page) {
+  var formIds = getAllFormIds();
+  var isFormPage = formIds.indexOf(page) >= 0;
+
+  // Handle page-form (dynamic container) or normal pages
+  document.querySelectorAll('.form-page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item:not(.disabled)').forEach(function(n){ n.classList.remove('active'); });
+
+  if (isFormPage) {
+    document.getElementById('page-form').classList.add('active');
+    appState.currentFormId = page;
+    renderForm(page);
+  } else {
+    var el = document.getElementById('page-' + page);
+    if (el) el.classList.add('active');
+  }
+
+  var navEl = document.getElementById('nav-' + page);
+  if (navEl) navEl.classList.add('active');
+  appState.currentPage = page;
+
+  if (isFormPage && appState.formStatus[page] === 'Not Started') {
+    setFormStatus(page, 'In Progress');
+  }
+
+  if (page === 'admin') {
+    renderUsersTable();
+    updateAdminStats();
+    buildAssignFormChecks('new-user-forms');
+    buildAssignFormChecks('assign-forms-checks');
+    populateFilterForm();
+    loadSpSettings();
+  }
+
+  if (window.innerWidth <= 900) {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+  }
+
+  window.scrollTo(0, 0);
+
+  // Load draft after render
+  if (isFormPage) {
+    setTimeout(function() { loadDraft(page); }, 150);
+  }
+}
+
+function toggleSidebar() {
+  var sb = document.getElementById('sidebar');
+  var ov = document.getElementById('sidebar-overlay');
+  sb.classList.toggle('open');
+  ov.classList.toggle('open');
+}
+
+// ============================================================
+// SECTION COLLAPSE
+// ============================================================
+function toggleSection(header) {
+  var body = header.nextElementSibling;
+  var toggle = header.querySelector('.section-toggle');
+  if (body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    toggle.classList.remove('collapsed');
+  } else {
+    body.classList.add('collapsed');
+    toggle.classList.add('collapsed');
+  }
+}
+
+// ============================================================
+// CONDITIONAL FIELDS
+// ============================================================
+function toggleCond(radio, condId) {
+  var el = document.getElementById(condId);
+  if (el) el.classList.add('show');
+}
+function hideCond(condId) {
+  var el = document.getElementById(condId);
+  if (el) el.classList.remove('show');
+}
+
+// ============================================================
+// DYNAMIC ROWS HELPERS
+// ============================================================
+function addAttendeeRow(tbodyId) {
+  var tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  var rowNum = tbody.rows.length + 1;
+  var uid = tbodyId + '-sig-' + Date.now() + '-' + rowNum;
+  var tr = document.createElement('tr');
+  tr.innerHTML = '<td style="color:#94a3b8;font-size:12px;text-align:center">' + rowNum + '</td>' +
+    '<td><input type="text" placeholder="Full name"></td>' +
+    '<td><input type="text" placeholder="Company"></td>' +
+    '<td>' + makeSigPadHTML(uid) + '</td>';
+  tbody.appendChild(tr);
+  renumberRows(tbody);
+  setTimeout(function(){ initSigPad(uid); }, 50);
+}
+
+function addActionRow(tbodyId) {
+  var id = tbodyId || 'current-actions-body';
+  var tbody = document.getElementById(id);
+  if (!tbody) return;
+  var rowNum = tbody.rows.length + 1;
+  var tr = document.createElement('tr');
+  tr.innerHTML = '<td style="color:#94a3b8;font-size:12px;text-align:center">' + rowNum + '</td>' +
+    '<td><input type="text" placeholder="Describe action"></td>' +
+    '<td><input type="text" placeholder="Name"></td>' +
+    '<td><input type="date"></td>' +
+    '<td><select><option value="">-</option><option>Yes</option><option>No</option></select></td>' +
+    '<td><div class="copy-checks">' +
+      '<label><input type="checkbox"> Proj. coordinator</label>' +
+      '<label><input type="checkbox"> QHSE manager</label>' +
+      '<label><input type="checkbox"> Proj. Manager</label>' +
+      '<label><input type="checkbox"> Client</label>' +
+      '<label><input type="checkbox"> Other</label>' +
+    '</div></td>';
+  tbody.appendChild(tr);
+}
+
+function removeLastRow(tbodyId) {
+  var tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  if (tbody.rows.length > 0) {
+    tbody.deleteRow(tbody.rows.length - 1);
+    renumberRows(tbody);
+  }
+}
+
+function renumberRows(tbody) {
+  for (var i = 0; i < tbody.rows.length; i++) {
+    tbody.rows[i].cells[0].textContent = i + 1;
+  }
+}
+
+// ============================================================
+// FORM RENDERER — MAIN
+// ============================================================
+function renderForm(formId) {
+  var configs = getFormConfigs();
+  var form = configs[formId];
+  if (!form) return;
+
+  var container = document.getElementById('form-container');
+  container.innerHTML = '';
+
+  // Header bar
+  var headerHTML = '<div class="form-header-bar">' +
+    '<h2>' + esc(form.code) + ' ' + esc(form.revision || '') + ' — ' + esc(form.title) + '</h2>' +
+    '<div class="form-subtitle">' + esc(form.subtitle || 'Complete all sections. Required fields are marked.') + '</div>' +
+    '<div class="header-fields">';
+  (form.headerFields || []).forEach(function(hf) {
+    headerHTML += '<div class="field-group"><label>' + esc(hf.label);
+    if (hf.labelSuffix) headerHTML += '<span style="font-size:11px;font-weight:400;color:#94a3b8">' + esc(hf.labelSuffix) + '</span>';
+    headerHTML += '</label>';
+    if (hf.type === 'date' || hf.type === 'time') {
+      headerHTML += '<input type="' + hf.type + '" id="' + hf.id + '">';
+    } else {
+      headerHTML += '<input type="' + (hf.type || 'text') + '" id="' + hf.id + '" placeholder="' + esc(hf.placeholder || '') + '">';
+    }
+    headerHTML += '</div>';
+  });
+  headerHTML += '</div></div>';
+  container.innerHTML += headerHTML;
+
+  // Sections
+  (form.sections || []).forEach(function(section, idx) {
+    var secEl = document.createElement('div');
+    secEl.className = 'section-block';
+    var bodyContent = '';
+    switch (section.type) {
+      case 'notice':              bodyContent = renderSection_notice(section); break;
+      case 'attendee-table':      bodyContent = renderSection_attendeeTable(section, formId); break;
+      case 'topic-comment-table': bodyContent = renderSection_topicCommentTable(section); break;
+      case 'yesno-table':         bodyContent = renderSection_yesnoTable(section); break;
+      case 'statement-table':     bodyContent = renderSection_statementTable(section); break;
+      case 'topic-details-table': bodyContent = renderSection_topicDetailsTable(section); break;
+      case 'free-fields':         bodyContent = renderSection_freeFields(section); break;
+      case 'declaration-table':   bodyContent = renderSection_declarationTable(section, formId); break;
+      case 'inspection-table':    bodyContent = renderSection_inspectionTable(section); break;
+      case 'lmra-table':          bodyContent = renderSection_lmraTable(section, formId); break;
+      case 'checkbox-grid':       bodyContent = renderSection_checkboxGrid(section); break;
+      case 'persons-table':       bodyContent = renderSection_personsTable(section); break;
+      case 'consequence-table':   bodyContent = renderSection_consequenceTable(section); break;
+      case 'investigation-table': bodyContent = renderSection_investigationTable(section); break;
+      case 'custom6-table':       bodyContent = renderSection_custom6Table(section); break;
+      case 'action-table':        bodyContent = renderSection_actionTable(section, formId); break;
+      case 'signatures':          bodyContent = renderSection_signatures(section, formId); break;
+      case 'signatures-named':    bodyContent = renderSection_signaturesNamed(section, formId); break;
+      default:                    bodyContent = '<div style="padding:16px;color:#94a3b8;font-size:13px">Unknown section type: ' + esc(section.type) + '</div>'; break;
+    }
+    secEl.innerHTML = '<div class="section-header" onclick="toggleSection(this)">' +
+      '<span class="section-title">' + esc(section.title || '') + '</span>' +
+      '<span class="section-toggle">&#9660;</span>' +
+      '</div>' +
+      '<div class="section-body">' + bodyContent + '</div>';
+    container.appendChild(secEl);
+  });
+
+  // Form actions
+  var actionsEl = document.createElement('div');
+  actionsEl.className = 'form-actions';
+  actionsEl.innerHTML =
+    '<button class="btn-back" onclick="showPage(\'dashboard\')">Back to Dashboard</button>' +
+    '<button class="btn-submit" onclick="submitForm(\'' + formId + '\')">Submit Form</button>';
+  container.appendChild(actionsEl);
+
+  // Init all sig pads
+  setTimeout(function(){ initAllSigPadsInForm(formId); }, 120);
+}
+
+// ============================================================
+// SECTION TYPE RENDERERS
+// ============================================================
+
+function renderSection_notice(section) {
+  var html = '<div class="notice-box">';
+  (section.items || []).forEach(function(item, i) {
+    html += '<p>' + esc(item) + '</p>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderSection_attendeeTable(section, formId) {
+  var tbodyId = section.tbodyId || (formId + '-attendees-body-' + Date.now());
+  var html = '<div class="table-wrap"><table class="form-table">' +
+    '<thead><tr><th>#</th><th>Name</th><th>Company</th><th>Signature</th></tr></thead>' +
+    '<tbody id="' + tbodyId + '"></tbody></table></div>' +
+    '<div class="table-controls">' +
+    '<button class="btn-add-row" onclick="addAttendeeRow(\'' + tbodyId + '\')">+ Add Row</button>' +
+    '<button class="btn-remove-row" onclick="removeLastRow(\'' + tbodyId + '\')">- Remove Row</button>' +
+    '</div>';
+  setTimeout(function(){
+    for (var i = 0; i < 3; i++) addAttendeeRow(tbodyId);
+  }, 10);
+  return html;
+}
+
+function renderSection_topicCommentTable(section) {
+  var html = '<div class="section-inner"><table class="form-table">' +
+    '<thead><tr><th>#</th><th>Topic</th><th>Comment / Answer</th></tr></thead><tbody>';
+  (section.rows || []).forEach(function(row) {
+    html += '<tr><td class="item-num">' + esc(row.num) + '</td>' +
+      '<td class="item-desc">' + esc(row.label);
+    if (row.subLabel) html += '<div class="sub-label">' + esc(row.subLabel) + '</div>';
+    html += '</td><td><input type="text" placeholder="' + esc(row.placeholder || 'Comment') + '"></td></tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function renderSection_yesnoTable(section) {
+  var html = '<div class="section-inner"><table class="form-table">' +
+    '<thead><tr><th style="width:36px">#</th><th>Description</th><th style="width:100px">Yes / No</th><th>Additional</th><th>Comments</th></tr></thead><tbody>';
+  (section.rows || []).forEach(function(row) {
+    html += '<tr><td class="item-num">' + esc(row.num) + '</td>' +
+      '<td class="item-desc">' + esc(row.label) + '</td>';
+
+    if (row.responseText) {
+      // Row with text input instead of radio
+      html += '<td><input type="text" placeholder="' + esc(row.placeholder || 'Describe') + '"></td><td></td>';
+    } else if (row.condId) {
+      // Yes/No radio with conditional checkboxes on Yes
+      html += '<td><div class="radio-group">' +
+        '<label><input type="radio" name="' + row.radioName + '" value="yes" onchange="toggleCond(this,\'' + row.condId + '\')">Yes</label>' +
+        '<label><input type="radio" name="' + row.radioName + '" value="no" onchange="hideCond(\'' + row.condId + '\')">No</label>' +
+        '</div></td>' +
+        '<td><div class="conditional-fields" id="' + row.condId + '"><div class="check-group">';
+      (row.condOptions || []).forEach(function(opt) {
+        html += '<label><input type="checkbox">' + esc(opt) + '</label>';
+      });
+      html += '</div></div></td>';
+    } else if (row.alwaysCheckboxes) {
+      // No radio, always-visible checkboxes
+      html += '<td></td><td><div class="check-group">';
+      row.alwaysCheckboxes.forEach(function(opt) {
+        html += '<label><input type="checkbox">' + esc(opt) + '</label>';
+      });
+      html += '</div></td>';
+    } else {
+      // Plain yes/no
+      html += '<td><div class="radio-group">' +
+        '<label><input type="radio" name="' + row.radioName + '" value="yes">Yes</label>' +
+        '<label><input type="radio" name="' + row.radioName + '" value="no">No</label>' +
+        '</div></td><td></td>';
+    }
+    html += '<td><input type="text" placeholder="Comments"></td></tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function renderSection_statementTable(section) {
+  var html = '<div class="section-inner"><table class="form-table">' +
+    '<thead><tr><th>#</th><th>Statement</th><th>Yes / No</th></tr></thead><tbody>';
+  (section.rows || []).forEach(function(row) {
+    html += '<tr><td class="item-num">' + esc(row.num) + '</td>' +
+      '<td class="item-desc">' + esc(row.label) + '</td>' +
+      '<td><div class="radio-group">' +
+      '<label><input type="radio" name="' + row.radioName + '" value="yes">Yes</label>' +
+      '<label><input type="radio" name="' + row.radioName + '" value="no">No</label>' +
+      '</div></td></tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function renderSection_topicDetailsTable(section) {
+  var html = '<div class="section-inner"><table class="form-table">' +
+    '<thead><tr><th style="width:36px">#</th><th>Topic</th><th>Details</th><th>Comments</th></tr></thead><tbody>';
+  (section.rows || []).forEach(function(row) {
+    html += '<tr><td class="item-num">' + esc(row.num) + '</td>' +
+      '<td class="item-desc">' + esc(row.label) + '</td>';
+    if (row.specialToolsRow) {
+      html += '<td>' +
+        '<input type="text" placeholder="Which special tools/equipment will you use? (1)" style="margin-bottom:5px">' +
+        '<input type="text" placeholder="Which special tools/equipment will you use? (2)" style="margin-bottom:5px">' +
+        '<div class="radio-group"><label><input type="radio" name="s4_4" value="yes">Yes</label>' +
+        '<label><input type="radio" name="s4_4" value="no">No</label>' +
+        '<label><input type="radio" name="s4_4" value="na">N/A</label>' +
+        '<span style="font-size:12px;color:#94a3b8">Instruction received?</span></div>' +
+        '</td>';
+    } else {
+      html += '<td>' + (row.detailsPlaceholder ? '<input type="text" placeholder="' + esc(row.detailsPlaceholder) + '">' : '') + '</td>';
+    }
+    html += '<td><input type="text" placeholder="Comments"></td></tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function renderSection_freeFields(section) {
+  var html = '<div style="padding:16px 20px;display:flex;flex-direction:column;gap:14px">';
+  (section.fields || []).forEach(function(field) {
+    html += '<div class="field-group">';
+    html += '<label>' + esc(field.label) + '</label>';
+    var idAttr = field.id ? ' id="' + field.id + '"' : '';
+    if (field.type === 'textarea') {
+      html += '<textarea' + idAttr + (field.large ? ' class="large-textarea"' : '') + ' placeholder="' + esc(field.placeholder || '') + '"></textarea>';
+    } else {
+      html += '<input type="' + (field.type || 'text') + '"' + idAttr + ' placeholder="' + esc(field.placeholder || '') + '">';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderSection_declarationTable(section, formId) {
+  var tbodyId = section.tbodyId || (formId + '-decl-body');
+  var html = '';
+  if (section.declarationText) {
+    html += '<div style="padding:12px 20px 8px;font-size:13px;color:#475569;font-style:italic">' + esc(section.declarationText) + '</div>';
+  }
+  html += '<div class="table-wrap"><table class="form-table">' +
+    '<thead><tr><th>#</th><th>Name</th><th>Company</th><th>Signature</th></tr></thead>' +
+    '<tbody id="' + tbodyId + '"></tbody></table></div>' +
+    '<div class="table-controls">' +
+    '<button class="btn-add-row" onclick="addAttendeeRow(\'' + tbodyId + '\')">+ Add Row</button>' +
+    '<button class="btn-remove-row" onclick="removeLastRow(\'' + tbodyId + '\')">- Remove Row</button>' +
+    '</div>';
+  if (section.legalText) {
+    html += '<div class="legal-warning" style="margin-top:8px"><p>' + esc(section.legalText) + '</p></div>';
+  }
+  setTimeout(function(){
+    for (var i = 0; i < 3; i++) addAttendeeRow(tbodyId);
+  }, 15);
+  return html;
+}
+
+function renderSection_inspectionTable(section) {
+  var rw = section.responseColWidth || '120px';
+  var html = '<div class="section-inner"><table class="form-table">' +
+    '<thead><tr><th style="width:36px">#</th><th>Topic</th><th style="width:' + rw + '">Response</th><th>Comments</th></tr></thead><tbody>';
+  (section.rows || []).forEach(function(row) {
+    var rtype = row.response || 'yes-no';
+    html += '<tr><td class="item-num">' + esc(row.num) + '</td>' +
+      '<td class="item-desc">' + esc(row.label);
+    if (row.subLabel) html += '<div class="sub-label">' + esc(row.subLabel) + '</div>';
+    html += '</td><td>';
+
+    if (rtype === 'full-width-text') {
+      html += '</td><td colspan="2"><input type="text" placeholder="' + esc(row.placeholder || '') + '" style="width:100%"></td>';
+      html += '</tr>';
+      return;
+    } else if (rtype === 'yes-no') {
+      html += '<div class="radio-group" style="flex-direction:column;gap:4px">' +
+        '<label><input type="radio" name="' + row.radioName + '" value="yes">YES</label>' +
+        '<label><input type="radio" name="' + row.radioName + '" value="no">NO</label>' +
+        '</div>';
+    } else if (rtype === 'yes-no-na') {
+      html += '<div class="radio-group" style="flex-direction:column;gap:4px">' +
+        '<label><input type="radio" name="' + row.radioName + '" value="yes">YES</label>' +
+        '<label><input type="radio" name="' + row.radioName + '" value="no">NO</label>' +
+        '<label><input type="radio" name="' + row.radioName + '" value="na">N/A</label>' +
+        '</div>';
+    } else if (rtype === 'custom-radio') {
+      html += '<div class="radio-group" style="flex-direction:column;gap:4px">';
+      (row.radioOptions || []).forEach(function(opt) {
+        html += '<label><input type="radio" name="' + row.radioName + '" value="' + esc(opt) + '">' + esc(opt) + '</label>';
+      });
+      html += '</div>';
+    } else if (rtype === 'yes-no-plus-text') {
+      html += '<div class="radio-group" style="flex-direction:column;gap:4px">';
+      (row.radioOptions || ['YES','No permit required']).forEach(function(opt) {
+        html += '<label><input type="radio" name="' + row.radioName + '" value="' + esc(opt) + '">' + esc(opt) + '</label>';
+      });
+      html += '</div><input type="text" placeholder="' + esc(row.extraPlaceholder || '') + '" style="margin-top:6px;width:100%;padding:6px 8px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:12px">';
+    } else if (rtype === 'yes-no-cond-text') {
+      var condTrig = row.condTrigger || 'no';
+      html += '<div class="radio-group" style="flex-direction:column;gap:4px">' +
+        '<label><input type="radio" name="' + row.radioName + '" value="yes"' +
+        (condTrig === 'yes' ? ' onchange="toggleCond(this,\'' + row.condId + '\')"' : ' onchange="hideCond(\'' + row.condId + '\')"') +
+        '>YES</label>' +
+        '<label><input type="radio" name="' + row.radioName + '" value="no"' +
+        (condTrig === 'no' ? ' onchange="toggleCond(this,\'' + row.condId + '\')"' : ' onchange="hideCond(\'' + row.condId + '\')"') +
+        '>NO</label></div>' +
+        '<div class="conditional-fields" id="' + row.condId + '">' +
+        '<input type="text" placeholder="' + esc(row.condPlaceholder || '') + '"></div>';
+    } else if (rtype === 'text') {
+      html += '<input type="text" placeholder="' + esc(row.placeholder || '') + '">';
+    }
+
+    html += '</td><td><input type="text" placeholder="' + esc(row.commentsPlaceholder || 'Comments') + '"></td></tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function renderSection_lmraTable(section, formId) {
+  var warnId = section.warningId || (formId + '-warning');
+  var html = '<div class="section-body"><table class="form-table">' +
+    '<thead><tr><th style="width:40px">No.</th><th>Question</th><th style="width:160px">Response</th></tr></thead><tbody>';
+  (section.rows || []).forEach(function(row) {
+    html += '<tr><td class="item-num">' + esc(row.num) + '</td>' +
+      '<td class="item-desc">' + esc(row.label) + '</td>' +
+      '<td><div class="radio-group">' +
+      '<label><input type="radio" name="' + row.radioName + '" value="YES" onchange="lmraCheck(\'' + warnId + '\')"> <span style="color:#16a34a;font-weight:700">YES</span></label>' +
+      '<label><input type="radio" name="' + row.radioName + '" value="NO" onchange="lmraCheck(\'' + warnId + '\')"> <span style="color:#dc2626;font-weight:700">NO</span></label>' +
+      '</div></td></tr>';
+  });
+  html += '</tbody></table>' +
+    '<div id="' + warnId + '" style="display:none" class="legal-warning" style="margin:12px 0">' +
+    '<p>' + esc(section.warningText || 'One or more answers are NO. Do NOT start work.') + '</p></div>' +
+    '</div>';
+  return html;
+}
+
+function lmraCheck(warnId) {
+  var container = document.getElementById(warnId);
+  if (!container) return;
+  var parentEl = container.closest('.section-body') || container.parentElement;
+  var hasNo = false;
+  if (parentEl) {
+    var radios = parentEl.querySelectorAll('input[type="radio"]:checked');
+    radios.forEach(function(r){ if (r.value === 'NO') hasNo = true; });
+  }
+  container.style.display = hasNo ? 'block' : 'none';
+}
+
+function renderSection_checkboxGrid(section) {
+  var html = '<div style="padding:16px 20px"><div class="check-group" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">';
+  (section.options || []).forEach(function(opt) {
+    html += '<label><input type="checkbox" name="' + esc(section.fieldName || '') + '" value="' + esc(opt) + '"> ' + esc(opt) + '</label>';
+  });
+  html += '</div></div>';
+  return html;
+}
+
+function renderSection_personsTable(section) {
+  var persons = section.persons || 3;
+  var cols = '';
+  for (var p = 1; p <= persons; p++) cols += '<th>Person ' + p + '</th>';
+  var html = '<div class="table-wrap"><table class="form-table"><thead><tr><th style="width:160px">Field</th>' + cols + '</tr></thead><tbody>';
+  (section.fields || []).forEach(function(field) {
+    html += '<tr><td class="item-desc">' + esc(field.label) + '</td>';
+    for (var p = 1; p <= persons; p++) {
+      html += '<td><input type="text" placeholder="' + esc(field.placeholder || '') + '"></td>';
+    }
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function renderSection_consequenceTable(section) {
+  var html = '<div style="padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px">';
+  (section.groups || []).forEach(function(grp) {
+    html += '<div><div style="font-size:12px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">' + esc(grp.label) + '</div>' +
+      '<div class="check-group" style="flex-direction:column;gap:8px">';
+    (grp.options || []).forEach(function(opt) {
+      html += '<label><input type="checkbox" name="' + esc(grp.fieldName) + '" value="' + esc(opt) + '"> ' + esc(opt) + '</label>';
+    });
+    html += '</div></div>';
+  });
+  html += '</div>';
+
+  if (section.extraFields && section.extraFields.length) {
+    html += '<div style="padding:0 20px 16px;display:grid;grid-template-columns:1fr 1fr;gap:16px">';
+    section.extraFields.forEach(function(ef) {
+      html += '<div class="field-group"><label>' + esc(ef.label) + '</label>' +
+        '<input type="' + esc(ef.type || 'text') + '" id="' + esc(ef.id || '') + '" placeholder="' + esc(ef.placeholder || '') + '"' +
+        (ef.min !== undefined ? ' min="' + ef.min + '"' : '') + '></div>';
+    });
+    html += '</div>';
+  }
+  return html;
+}
+
+function renderSection_investigationTable(section) {
+  var html = '<table class="form-table"><tbody>';
+  (section.rows || []).forEach(function(row) {
+    html += '<tr><td class="item-desc">' + esc(row.label) + '</td><td>';
+    if (row.type === 'datetime') {
+      html += '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">' +
+        '<input type="date" id="' + esc(row.dateId || '') + '" style="width:auto">' +
+        '<input type="time" id="' + esc(row.timeId || '') + '" style="width:auto">' +
+        '</div>';
+    } else {
+      html += '<div class="radio-group">';
+      (row.options || ['Yes','No']).forEach(function(opt) {
+        html += '<label><input type="radio" name="' + row.radioName + '" value="' + esc(opt) + '"> ' + esc(opt) + '</label>';
+      });
+      html += '</div>';
+    }
+    html += '</td></tr>';
+  });
+  html += '</tbody></table>';
+  return html;
+}
+
+function renderSection_custom6Table(section) {
+  var html = '<div class="section-inner"><table class="form-table">' +
+    '<thead><tr><th style="width:36px">#</th><th>Custom Control Point</th><th>Comments</th></tr></thead><tbody>';
+  (section.rows || []).forEach(function(row) {
+    html += '<tr><td class="item-num">' + esc(row.num) + '</td>' +
+      '<td><input type="text" placeholder="Enter control point description"></td>' +
+      '<td><input type="text" placeholder="Comments"></td></tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function renderSection_actionTable(section, formId) {
+  var tbodyId = section.tbodyId || ('current-actions-body');
+  var html = '<div class="table-wrap" style="overflow-x:auto">' +
+    '<table class="form-table action-table" id="' + tbodyId + '-table" style="min-width:700px">' +
+    '<thead><tr>' +
+    '<th style="width:40px">Point</th><th>Action</th><th style="width:130px">Executed by</th>' +
+    '<th style="width:110px">Execute before</th><th style="width:90px">Done directly</th><th style="width:200px">Copy to</th>' +
+    '</tr></thead>' +
+    '<tbody id="' + tbodyId + '"></tbody></table></div>' +
+    '<div class="table-controls">' +
+    '<button class="btn-add-row" onclick="addActionRow(\'' + tbodyId + '\')">+ Add Row</button>' +
+    '<button class="btn-remove-row" onclick="removeLastRow(\'' + tbodyId + '\')">- Remove Row</button>' +
+    '</div>';
+  setTimeout(function(){
+    for (var i = 0; i < 2; i++) addActionRow(tbodyId);
+  }, 20);
+  return html;
+}
+
+function renderSection_signatures(section, formId) {
+  var uid1 = formId + '-sig1';
+  var uid2 = formId + '-sig2';
+  var html = '<div class="sig-footer">' +
+    '<div class="field-group"><label>Signature / Initials</label>' +
+    makeSigPadHTML(uid1) +
+    '<label style="margin-top:10px">Date</label><input type="date"></div>' +
+    '<div class="field-group"><label>Completed by</label><input type="text" placeholder="Full name">' +
+    '<label style="margin-top:10px">Signature</label>' +
+    makeSigPadHTML(uid2) +
+    '<label style="margin-top:10px">Date</label><input type="date"></div>' +
+    '</div>';
+  return html;
+}
+
+function renderSection_signaturesNamed(section, formId) {
+  var html = '<table class="form-table"><thead><tr><th>Role</th><th>Name / Signature</th><th style="width:160px">Date</th></tr></thead><tbody>';
+  (section.roles || []).forEach(function(role, idx) {
+    var uid = formId + '-sig' + (idx + 1);
+    html += '<tr><td class="item-desc">' + esc(role) + '</td>' +
+      '<td>' + makeSigPadHTML(uid) + '</td>' +
+      '<td><input type="date"></td></tr>';
+  });
+  html += '</tbody></table>';
+  if (section.note) {
+    html += '<div style="padding:12px 20px;font-size:12px;color:#64748b">' + esc(section.note) + '</div>';
+  }
+  return html;
+}
+
+function initAllSigPadsInForm(formId) {
+  var container = document.getElementById('form-container');
+  if (!container) return;
+  container.querySelectorAll('canvas.sig-canvas[id]').forEach(function(c) {
+    var uid = c.id.replace('sig-', '');
+    initSigPad(uid);
+  });
+}
+
+// ============================================================
+// FORM STATUS
+// ============================================================
+function setFormStatus(formId, status) {
+  appState.formStatus[formId] = status;
+  var badge = document.getElementById('badge-' + formId);
+  if (!badge) return;
+  badge.className = 'badge';
+  if (status === 'Not Started') badge.classList.add('badge-notstarted');
+  else if (status === 'In Progress') badge.classList.add('badge-inprogress');
+  else if (status === 'Completed') badge.classList.add('badge-completed');
+  badge.textContent = status;
+}
+
+// ============================================================
+// VALIDATION
+// ============================================================
+function validateForm(formId) {
+  var configs = getFormConfigs();
+  var form = configs[formId];
+  if (!form) return true;
+  var valid = true;
+  (form.headerFields || []).forEach(function(hf) {
+    if (hf.label && hf.label.indexOf('*') >= 0) {
+      var el = document.getElementById(hf.id);
+      if (el && !el.value.trim()) {
+        el.classList.add('invalid');
+        valid = false;
+      } else if (el) {
+        el.classList.remove('invalid');
+      }
+    }
+  });
+  return valid;
+}
+
+document.addEventListener('input', function(e){
+  if (e.target.classList.contains('invalid')) e.target.classList.remove('invalid');
+});
+
+// ============================================================
+// SUBMIT
+// ============================================================
+function submitForm(formId) {
+  if (!validateForm(formId)) {
+    showToast('Please fill in all required fields (highlighted in red).', true);
+    return;
+  }
+  var data = collectFormData(formId);
+  submitToSharePoint(formId, data);
+}
+
+function collectFormData(formId) {
+  var container = document.getElementById('form-container');
+  var data = { formId: formId, submittedBy: appState.user, userEmail: appState.userEmail, userCompany: appState.userCompany, submittedAt: new Date().toISOString() };
+  if (!container) return data;
+
+  container.querySelectorAll('.field-group').forEach(function(fg) {
+    var labelEl = fg.querySelector('label');
+    var inputEl = fg.querySelector('input, textarea, select');
+    if (!labelEl || !inputEl) return;
+    if (inputEl.type === 'radio' || inputEl.type === 'checkbox') return;
+    var label = labelEl.textContent.replace('*','').trim();
+    var val = inputEl.value.trim();
+    if (val) data[label] = val;
+  });
+
+  container.querySelectorAll('.form-table tr').forEach(function(row) {
+    var desc = row.querySelector('.item-desc');
+    if (!desc) return;
+    var label = desc.textContent.trim();
+    var checked = row.querySelector('input[type="radio"]:checked');
+    if (checked) data[label] = checked.value;
+    var cbs = row.querySelectorAll('input[type="checkbox"]:checked');
+    if (cbs.length) {
+      var cbVals = Array.from(cbs).map(function(cb) {
+        if (cb.value && cb.value !== 'on') return cb.value;
+        var lbl = cb.closest('label');
+        return lbl ? lbl.textContent.trim() : 'checked';
+      });
+      var cbKey = checked ? label + ' — conditions' : label;
+      data[cbKey] = cbVals.join(', ');
+    }
+    var inputs = row.querySelectorAll('input[type="text"], input[type="date"], textarea');
+    var vals = [];
+    inputs.forEach(function(inp){ if (inp.value.trim()) vals.push(inp.value.trim()); });
+    if (vals.length) {
+      var txtKey = checked ? label + ' (comment)' : label;
+      if (!data[txtKey]) data[txtKey] = vals.join(' | ');
+    }
+  });
+
+  var radioGroups = {};
+  container.querySelectorAll('input[type="radio"]:checked').forEach(function(r) {
+    if (r.name && !radioGroups[r.name]) radioGroups[r.name] = r.value;
+  });
+  Object.keys(radioGroups).forEach(function(name) {
+    if (!data[name]) data[name] = radioGroups[name];
+  });
+
+  var cbGroups = {};
+  container.querySelectorAll('input[type="checkbox"]:checked').forEach(function(cb) {
+    if (!cb.name) return;
+    if (!cbGroups[cb.name]) cbGroups[cb.name] = [];
+    var val = (cb.value && cb.value !== 'on') ? cb.value : (cb.closest('label') ? cb.closest('label').textContent.trim() : 'checked');
+    cbGroups[cb.name].push(val);
+  });
+  Object.keys(cbGroups).forEach(function(name) {
+    if (!data[name]) data[name] = cbGroups[name].join(', ');
+  });
+
+  container.querySelectorAll('textarea[id]').forEach(function(ta) {
+    if (ta.value.trim() && !data[ta.id]) data[ta.id.replace(/^f\d+-/,'')] = ta.value.trim();
+  });
+
+  container.querySelectorAll('canvas.sig-canvas[id]').forEach(function(c) {
+    var uid = c.id.replace('sig-','');
+    var sigData = getSigData(uid);
+    if (sigData) data['Signature: ' + uid] = sigData;
+  });
+
+  var configs = getFormConfigs();
+  var form = configs[formId];
+  if (form) {
+    (form.headerFields || []).forEach(function(hf) {
+      var el = document.getElementById(hf.id);
+      if (el && el.value) {
+        var cleanLabel = hf.label.replace('*','').trim();
+        if (cleanLabel.toLowerCase().indexOf('project') >= 0) data.project = el.value;
+        data[cleanLabel] = el.value;
+      }
+    });
+  }
+
+  data._radios = radioGroups;
+  data._checkboxes = cbGroups;
+  return data;
+}
+
+// ============================================================
+// SHAREPOINT INTEGRATION
+// ============================================================
+function getSpSiteUrl() {
+  return (localStorage.getItem('QSHE_sp_site_url') || '').replace(/\/$/, '');
+}
+
+function saveSpSettings() {
+  var url = (document.getElementById('sp-site-url').value || '').trim().replace(/\/$/, '');
+  localStorage.setItem('QSHE_sp_site_url', url);
+  showSpStatus(url ? 'URL saved.' : 'URL cleared.', url ? 'green' : 'orange');
+  loadSpSettings();
+}
+
+function loadSpSettings() {
+  var url = getSpSiteUrl();
+  var inp = document.getElementById('sp-site-url');
+  var info = document.getElementById('sp-connection-info');
+  if (inp) inp.value = url;
+  if (info) {
+    if (url) {
+      info.innerHTML = '<span style="color:#16a34a">&#10003;</span> Connected to: <strong>' + url + '</strong>';
+    } else {
+      info.textContent = 'No SharePoint URL configured yet. Go to Settings tab.';
+    }
+  }
+}
+
+function showSpStatus(msg, color) {
+  var el = document.getElementById('sp-status');
+  if (!el) return;
+  el.style.display = 'block';
+  el.style.color = color === 'green' ? '#16a34a' : color === 'red' ? '#dc2626' : '#d97706';
+  el.textContent = msg;
+}
+
+function testSpConnection() {
+  var url = (document.getElementById('sp-site-url').value || '').trim().replace(/\/$/, '');
+  if (!url) { showSpStatus('Please enter a SharePoint site URL first.', 'orange'); return; }
+  showSpStatus('Testing connection...', 'orange');
+  fetch(url + "/_api/web?$select=Title", {
+    headers: { 'Accept': 'application/json;odata=verbose' },
+    credentials: 'include'
+  })
+  .then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  })
+  .then(function(json) {
+    var title = (json.d && json.d.Title) ? json.d.Title : 'Unknown site';
+    showSpStatus('Connected OK — site: ' + title, 'green');
+  })
+  .catch(function(err) {
+    showSpStatus('Connection failed: ' + err.message + '. Make sure you are signed in to SharePoint in this browser.', 'red');
+  });
+}
+
+function spPostItem(listName, fields) {
+  var siteUrl = getSpSiteUrl();
+  if (!siteUrl) return Promise.reject(new Error('No SharePoint URL configured.'));
+  var endpoint = siteUrl + "/_api/web/lists/getbytitle('" + listName + "')/items";
+  return fetch(siteUrl + "/_api/contextinfo", {
+    method: 'POST',
+    headers: { 'Accept': 'application/json;odata=verbose' },
+    credentials: 'include'
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(ctx) {
+    var digest = ctx.d.GetContextWebInformation.FormDigestValue;
+    var body = JSON.stringify(Object.assign({ '__metadata': { 'type': 'SP.Data.' + listName + 'ListItem' } }, fields));
+    return fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json;odata=verbose',
+        'Content-Type': 'application/json;odata=verbose',
+        'X-RequestDigest': digest
+      },
+      credentials: 'include',
+      body: body
+    });
+  })
+  .then(function(r) {
+    if (!r.ok) return r.json().then(function(e) { throw new Error(e.error && e.error.message ? e.error.message.value : 'HTTP ' + r.status); });
+    return r.json();
+  });
+}
+
+function submitToSharePoint(formId, data) {
+  // Always save locally first
+  var subs = getSubmissions();
+  subs.push({
+    formId: formId,
+    submittedBy: data.submittedBy,
+    submittedAt: data.submittedAt,
+    project: data.project || '',
+    data: data
+  });
+  saveSubmissions(subs);
+  setFormStatus(formId, 'Completed');
+  renderDashboard();
+
+  var siteUrl = getSpSiteUrl();
+  if (!siteUrl) {
+    showToast('Form saved locally. Configure SharePoint URL in Settings to sync online.');
+    return;
+  }
+
+  var configs = getFormConfigs();
+  var cfg = configs[formId] || {};
+  var token = data.submittedBy + '_' + formId + '_' + Date.now();
+
+  showToast('Submitting to SharePoint...');
+
+  spPostItem('QSHE_FormSubmissions', {
+    ContactName:   data.submittedBy || '',
+    ContactEmail:  data.userEmail || '',
+    Company:       data.project || '',
+    FormId:        formId,
+    FormTitle:     cfg.title || formId,
+    Token:         token,
+    SubmittedAt:   data.submittedAt || new Date().toISOString(),
+    FormData:      JSON.stringify(data),
+    ReviewStatus:  'Pending'
+  })
+  .then(function() {
+    showToast('Form submitted to SharePoint successfully.');
+  })
+  .catch(function(err) {
+    showToast('Saved locally. SharePoint sync failed: ' + err.message, true);
+  });
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg, isError) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderLeftColor = isError ? '#ef4444' : '#22c55e';
+  t.style.display = 'block';
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(function(){ t.style.display = 'none'; }, 4000);
+}
+
+// ============================================================
+// SIGNATURE PAD ENGINE
+// ============================================================
+var _sigPads = {};
+
+function makeSigPadHTML(uid) {
+  return '<div class="sig-pad-wrap" id="wrap-' + uid + '">' +
+    '<canvas class="sig-canvas" id="sig-' + uid + '" height="70"></canvas>' +
+    '<div class="sig-pad-controls">' +
+    '<button type="button" class="sig-clear" onclick="clearSig(\'' + uid + '\')">Clear</button>' +
+    '</div></div>';
+}
+
+function initSigPad(uid) {
+  var canvas = document.getElementById('sig-' + uid);
+  if (!canvas) return;
+  function resizeCanvas() {
+    var data = canvas.toDataURL();
+    canvas.width = canvas.offsetWidth;
+    if (_sigPads[uid] && _sigPads[uid].hasSig) {
+      var img = new Image();
+      img.onload = function(){ canvas.getContext('2d').drawImage(img, 0, 0); };
+      img.src = data;
+    }
+  }
+  canvas.width = canvas.offsetWidth || 300;
+  var ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  var state = { drawing: false, hasSig: false, lastX: 0, lastY: 0 };
+  _sigPads[uid] = state;
+  function getPos(e) {
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    if (e.touches) {
+      return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
+    }
+    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+  }
+  function startDraw(e) {
+    e.preventDefault();
+    state.drawing = true;
+    var p = getPos(e);
+    state.lastX = p.x; state.lastY = p.y;
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  }
+  function draw(e) {
+    if (!state.drawing) return;
+    e.preventDefault();
+    var p = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(state.lastX, state.lastY);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    state.lastX = p.x; state.lastY = p.y;
+    if (!state.hasSig) { state.hasSig = true; canvas.classList.add('signed'); }
+  }
+  function stopDraw(e) { state.drawing = false; }
+  canvas.addEventListener('mousedown', startDraw);
+  canvas.addEventListener('mousemove', draw);
+  canvas.addEventListener('mouseup', stopDraw);
+  canvas.addEventListener('mouseleave', stopDraw);
+  canvas.addEventListener('touchstart', startDraw, { passive: false });
+  canvas.addEventListener('touchmove', draw, { passive: false });
+  canvas.addEventListener('touchend', stopDraw);
+  window.addEventListener('resize', function() { setTimeout(resizeCanvas, 100); });
+}
+
+function clearSig(uid) {
+  var canvas = document.getElementById('sig-' + uid);
+  if (!canvas) return;
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  canvas.classList.remove('signed');
+  if (_sigPads[uid]) _sigPads[uid].hasSig = false;
+}
+
+function getSigData(uid) {
+  var canvas = document.getElementById('sig-' + uid);
+  if (!canvas || !(_sigPads[uid] && _sigPads[uid].hasSig)) return null;
+  return canvas.toDataURL('image/png');
+}
+
+// ============================================================
+// AUTOSAVE
+// ============================================================
+var _autosaveTimer = null;
+
+function initAutosave() {
+  document.addEventListener('input', scheduleAutosave);
+  document.addEventListener('change', scheduleAutosave);
+}
+
+function scheduleAutosave(e) {
+  var formPage = document.getElementById('page-form');
+  if (!formPage || !formPage.classList.contains('active')) return;
+  clearTimeout(_autosaveTimer);
+  showAutosaveIndicator('saving');
+  _autosaveTimer = setTimeout(function() { doAutosave(); }, 1200);
+}
+
+function doAutosave() {
+  var page = appState.currentFormId;
+  if (!page) return;
+  var draft = collectFormData(page);
+  lsSet('draft_' + page + '_' + appState.user, draft);
+  showAutosaveIndicator('saved');
+}
+
+function loadDraft(formId) {
+  var draft = lsGet('draft_' + formId + '_' + appState.user);
+  if (!draft) return;
+  var container = document.getElementById('form-container');
+  if (!container) return;
+
+  Object.keys(draft).forEach(function(key) {
+    var el = document.getElementById(key);
+    if (el && el.tagName !== 'CANVAS') el.value = draft[key] || '';
+  });
+
+  if (draft._radios) {
+    Object.keys(draft._radios).forEach(function(name) {
+      var val = draft._radios[name];
+      container.querySelectorAll('input[name="' + name + '"][type="radio"]').forEach(function(r) {
+        r.checked = (r.value === val);
+        if (r.checked) r.dispatchEvent(new Event('change'));
+      });
+    });
+  }
+  if (draft._checkboxes) {
+    Object.keys(draft._checkboxes).forEach(function(name) {
+      var vals = (draft._checkboxes[name] || '').split ? (draft._checkboxes[name] || '').split(', ') : (draft._checkboxes[name] || []);
+      if (typeof vals === 'string') vals = vals.split(', ');
+      container.querySelectorAll('input[name="' + name + '"][type="checkbox"]').forEach(function(cb) {
+        cb.checked = vals.indexOf(cb.value) >= 0;
+      });
+    });
+  }
+}
+
+function showAutosaveIndicator(state) {
+  var ind = document.getElementById('autosave-indicator');
+  var dot = document.getElementById('autosave-dot');
+  var txt = document.getElementById('autosave-text');
+  if (!ind) return;
+  ind.style.display = 'flex';
+  if (state === 'saving') {
+    dot.style.background = '#f59e0b';
+    txt.textContent = 'Saving...';
+  } else {
+    dot.style.background = '#22c55e';
+    txt.textContent = 'Draft saved';
+    clearTimeout(window._autosaveFade);
+    window._autosaveFade = setTimeout(function() { ind.style.display = 'none'; }, 3000);
+  }
+}
+
+// ============================================================
+// ADMIN — TAB SWITCHING
+// ============================================================
+function showAdminTab(tab, evt) {
+  document.querySelectorAll('.admin-tab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('.admin-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('admin-tab-' + tab).classList.add('active');
+  if (evt && evt.target) evt.target.classList.add('active');
+  if (tab === 'submissions') { renderSubmissions(); renderOverview(); }
+  if (tab === 'assignments') { populateAssignSelect(); }
+  if (tab === 'formeditor') { feShowList(); }
+  if (tab === 'users') { renderUsersTable(); }
+  if (tab === 'settings') { loadSpSettings(); }
+  updateAdminStats();
+}
+
+function buildAssignFormChecks(containerId) {
+  var configs = getFormConfigs();
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  Object.keys(configs).forEach(function(fid) {
+    var f = configs[fid];
+    var lbl = document.createElement('label');
+    lbl.innerHTML = '<input type="checkbox" value="' + fid + '"> ' + esc(f.code) + ' ' + esc(f.title);
+    container.appendChild(lbl);
+  });
+}
+
+function populateFilterForm() {
+  var configs = getFormConfigs();
+  var sel = document.getElementById('filter-form');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">All Forms</option>';
+  Object.keys(configs).forEach(function(fid) {
+    var f = configs[fid];
+    var opt = document.createElement('option');
+    opt.value = fid;
+    opt.textContent = f.code + ' ' + f.title;
+    sel.appendChild(opt);
+  });
+}
+
+// ============================================================
+// ADMIN — USER MANAGEMENT
+// ============================================================
+function adminAddUser() {
+  var name = document.getElementById('new-user-name').value.trim();
+  var email = document.getElementById('new-user-email').value.trim();
+  var role = document.getElementById('new-user-role').value;
+  var code = document.getElementById('new-user-code').value.trim().toUpperCase();
+  var deadline = document.getElementById('new-user-deadline').value;
+  if (!name || !code) { showToast('Name and Invite Code are required.', true); return; }
+  var forms = [];
+  document.querySelectorAll('#new-user-forms input:checked').forEach(function(cb){ forms.push(cb.value); });
+  var users = getUsers();
+  if (users.some(function(u){ return u.code === code; })) { showToast('Invite code already in use. Choose a different one.', true); return; }
+  users.push({ id: Date.now(), name: name, email: email, role: role, code: code, forms: forms, deadline: deadline, active: true });
+  saveUsers(users);
+  document.getElementById('new-user-name').value = '';
+  document.getElementById('new-user-email').value = '';
+  document.getElementById('new-user-code').value = '';
+  document.getElementById('new-user-deadline').value = '';
+  document.querySelectorAll('#new-user-forms input').forEach(function(cb){ cb.checked = false; });
+  renderUsersTable();
+  updateAdminStats();
+  showToast('User "' + name + '" added. Invite code: ' + code);
+}
+
+function renderUsersTable() {
+  var users = getUsers();
+  var configs = getFormConfigs();
+  var tbody = document.getElementById('users-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (users.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="color:#94a3b8;text-align:center;padding:20px">No users yet. Add one above.</td></tr>';
+    return;
+  }
+  users.forEach(function(u, idx) {
+    var tr = document.createElement('tr');
+    var formLabels = (u.forms||[]).map(function(f){ return configs[f] ? configs[f].code : f; }).join(', ') || '—';
+    var dl = u.deadline ? u.deadline : '—';
+    var now = new Date().toISOString().slice(0,10);
+    var dlStyle = (u.deadline && u.deadline < now) ? 'color:#dc2626;font-weight:700' : '';
+    tr.innerHTML =
+      '<td style="font-weight:600">' + esc(u.name) + '</td>' +
+      '<td>' + esc(u.role) + '</td>' +
+      '<td><code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:12px">' + esc(u.code) + '</code></td>' +
+      '<td style="font-size:12px">' + esc(formLabels) + '</td>' +
+      '<td style="' + dlStyle + ';font-size:12px">' + dl + '</td>' +
+      '<td><span class="admin-badge ' + (u.active ? 'admin-badge-active' : 'admin-badge-inactive') + '">' + (u.active ? 'Active' : 'Inactive') + '</span></td>' +
+      '<td style="display:flex;gap:6px;flex-wrap:wrap">' +
+        '<button class="btn-sm btn-sm-amber" onclick="toggleUserActive(' + idx + ')">Toggle</button>' +
+        '<button class="btn-sm btn-sm-red" onclick="deleteUser(' + idx + ')">Delete</button>' +
+      '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function toggleUserActive(idx) {
+  var users = getUsers();
+  if (!users[idx]) return;
+  users[idx].active = !users[idx].active;
+  saveUsers(users);
+  renderUsersTable();
+  updateAdminStats();
+}
+
+function deleteUser(idx) {
+  var users = getUsers();
+  if (!users[idx]) return;
+  if (!confirm('Delete user "' + users[idx].name + '"? This cannot be undone.')) return;
+  users.splice(idx, 1);
+  saveUsers(users);
+  renderUsersTable();
+  updateAdminStats();
+}
+
+// ============================================================
+// ADMIN — ASSIGNMENTS
+// ============================================================
+function populateAssignSelect() {
+  var sel = document.getElementById('assign-user-select');
+  var users = getUsers();
+  sel.innerHTML = '<option value="">-- Select user --</option>';
+  users.forEach(function(u, idx){
+    var opt = document.createElement('option');
+    opt.value = idx;
+    opt.textContent = u.name + ' (' + u.role + ')';
+    sel.appendChild(opt);
+  });
+  document.getElementById('assignment-editor').style.display = 'none';
+  buildAssignFormChecks('assign-forms-checks');
+}
+
+function loadAssignmentEditor() {
+  var idx = document.getElementById('assign-user-select').value;
+  var editor = document.getElementById('assignment-editor');
+  if (idx === '') { editor.style.display = 'none'; return; }
+  var users = getUsers();
+  var u = users[idx];
+  if (!u) return;
+  editor.style.display = 'block';
+  document.querySelectorAll('#assign-forms-checks input').forEach(function(cb){
+    cb.checked = (u.forms || []).indexOf(cb.value) >= 0;
+  });
+  document.getElementById('assign-deadline').value = u.deadline || '';
+}
+
+function saveAssignment() {
+  var idx = document.getElementById('assign-user-select').value;
+  var users = getUsers();
+  if (idx === '' || !users[idx]) return;
+  var forms = [];
+  document.querySelectorAll('#assign-forms-checks input:checked').forEach(function(cb){ forms.push(cb.value); });
+  users[idx].forms = forms;
+  users[idx].deadline = document.getElementById('assign-deadline').value;
+  saveUsers(users);
+  showToast('Assignment saved for ' + users[idx].name);
+  renderUsersTable();
+}
+
+// ============================================================
+// ADMIN — SUBMISSIONS
+// ============================================================
+function renderSubmissions() {
+  var configs = getFormConfigs();
+  var subs = getSubmissions();
+  var filterForm = (document.getElementById('filter-form')||{}).value || '';
+  var filterUser = (document.getElementById('filter-user')||{}).value || '';
+
+  var userSel = document.getElementById('filter-user');
+  if (userSel) {
+    var current = userSel.value;
+    var names = [];
+    subs.forEach(function(s){ if (names.indexOf(s.submittedBy) < 0) names.push(s.submittedBy); });
+    userSel.innerHTML = '<option value="">All Users</option>';
+    names.forEach(function(n){ var o=document.createElement('option'); o.value=n; o.textContent=n; if(n===current) o.selected=true; userSel.appendChild(o); });
+  }
+
+  if (filterForm) subs = subs.filter(function(s){ return s.formId === filterForm; });
+  if (filterUser) subs = subs.filter(function(s){ return s.submittedBy === filterUser; });
+
+  var tbody = document.getElementById('submissions-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (subs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color:#94a3b8;text-align:center;padding:20px">No submissions yet.</td></tr>';
+    return;
+  }
+  var allSubs = getSubmissions();
+  subs.slice().reverse().forEach(function(s) {
+    var realIdx = allSubs.indexOf(s);
+    var f = configs[s.formId] || { code: s.formId, title: '' };
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td style="font-weight:600">' + esc(s.submittedBy) + '</td>' +
+      '<td><span style="font-weight:700;color:#0ea5e9">' + esc(f.code) + '</span> ' + esc(f.title) + '</td>' +
+      '<td style="font-size:12px;color:#64748b">' + (s.submittedAt ? new Date(s.submittedAt).toLocaleString() : '—') + '</td>' +
+      '<td style="font-size:12px">' + esc(s.project || '—') + '</td>' +
+      '<td style="display:flex;gap:5px;flex-wrap:wrap">' +
+        '<button class="btn-sm btn-sm-blue" onclick="viewSubmission(' + realIdx + ')">View</button>' +
+        '<button class="btn-sm btn-sm-green" onclick="printSubmission(' + realIdx + ')">Print</button>' +
+        '<button class="btn-sm btn-sm-amber" onclick="emailSubmission(' + realIdx + ')">Email</button>' +
+      '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function renderOverview() {
+  var configs = getFormConfigs();
+  var users = getUsers();
+  var subs = getSubmissions();
+  var formIds = Object.keys(configs);
+  var tbody = document.getElementById('overview-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (users.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="' + (2 + formIds.length + 1) + '" style="color:#94a3b8;text-align:center;padding:20px">No users added yet.</td></tr>';
+    return;
+  }
+  users.forEach(function(u) {
+    var tr = document.createElement('tr');
+    var cells = '<td style="font-weight:600">' + esc(u.name) + '</td><td style="font-size:12px;color:#64748b">' + esc(u.role) + '</td>';
+    formIds.forEach(function(fid) {
+      if ((u.forms||[]).indexOf(fid) < 0) {
+        cells += '<td style="color:#cbd5e1;text-align:center">—</td>';
+        return;
+      }
+      var submitted = subs.some(function(s){ return s.submittedBy === u.name && s.formId === fid; });
+      cells += '<td style="text-align:center">' +
+        (submitted ? '<span class="badge badge-completed" style="font-size:10px">Done</span>' : '<span class="badge badge-notstarted" style="font-size:10px">Pending</span>') +
+        '</td>';
+    });
+    var now = new Date().toISOString().slice(0,10);
+    var dlStyle = (u.deadline && u.deadline < now) ? 'color:#dc2626;font-weight:700' : 'color:#64748b';
+    cells += '<td style="font-size:12px;' + dlStyle + '">' + (u.deadline || '—') + '</td>';
+    tr.innerHTML = cells;
+    tbody.appendChild(tr);
+  });
+}
+
+function viewSubmission(idx) {
+  var configs = getFormConfigs();
+  var subs = getSubmissions();
+  var s = subs[idx];
+  if (!s) return;
+  var f = configs[s.formId] || { code: s.formId, title: '' };
+  document.getElementById('sub-view-title').textContent = f.code + ' — ' + f.title;
+  var html = '<div class="sub-field"><strong>Submitted by:</strong> ' + esc(s.submittedBy) + '</div>' +
+    '<div class="sub-field"><strong>Date/Time:</strong> ' + (s.submittedAt ? new Date(s.submittedAt).toLocaleString() : '—') + '</div>' +
+    '<div class="sub-field"><strong>Project:</strong> ' + esc(s.project || '—') + '</div><hr style="margin:12px 0;border-color:#f1f5f9">';
+  var data = s.data || {};
+  var skip = { formId:1, submittedBy:1, submittedAt:1, project:1, _radios:1, _checkboxes:1 };
+  Object.keys(data).forEach(function(k) {
+    if (skip[k] || k.startsWith('_')) return;
+    var v = data[k];
+    if (v === null || v === undefined || v === '') return;
+    if (typeof v === 'string' && v.startsWith('data:image')) {
+      html += '<div class="sub-field"><strong>' + esc(k) + ':</strong><br>' +
+        '<img src="' + v + '" style="max-width:220px;border:1px solid #e2e8f0;border-radius:6px;margin-top:4px"></div>';
+    } else if (typeof v === 'object') {
+      var display = Object.values(v).filter(Boolean).join(', ');
+      if (display) html += '<div class="sub-field"><strong>' + esc(k) + ':</strong> ' + esc(display) + '</div>';
+    } else {
+      html += '<div class="sub-field"><strong>' + esc(k) + ':</strong> ' + esc(String(v)) + '</div>';
+    }
+  });
+  document.getElementById('sub-view-body').innerHTML = html;
+  document.getElementById('sub-view-overlay').classList.add('open');
+  document.getElementById('sub-view-print-btn').onclick = function() { printSubmission(idx); };
+  document.getElementById('sub-view-email-btn').onclick = function() { emailSubmission(idx); };
+}
+
+function closeSubView() { document.getElementById('sub-view-overlay').classList.remove('open'); }
+
+function clearAllSubmissions() {
+  if (!confirm('Delete ALL submissions? This cannot be undone.')) return;
+  saveSubmissions([]);
+  renderSubmissions();
+  renderOverview();
+  updateAdminStats();
+  showToast('All submissions cleared.');
+}
+
+function updateAdminStats() {
+  var users = getUsers();
+  var subs = getSubmissions();
+  var activeUsers = users.filter(function(u){ return u.active; });
+  var pending = 0, completed = 0;
+  activeUsers.forEach(function(u){
+    (u.forms||[]).forEach(function(fid){
+      var done = subs.some(function(s){ return s.submittedBy === u.name && s.formId === fid; });
+      if (done) completed++; else pending++;
+    });
+  });
+  var el = function(id){ return document.getElementById(id); };
+  if (el('stat-users')) el('stat-users').textContent = activeUsers.length;
+  if (el('stat-submissions')) el('stat-submissions').textContent = subs.length;
+  if (el('stat-pending')) el('stat-pending').textContent = pending;
+  if (el('stat-completed')) el('stat-completed').textContent = completed;
+}
+
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============================================================
+// ADMIN — PRINT SUBMISSION
+// ============================================================
+function printSubmission(idx) {
+  var configs = getFormConfigs();
+  var subs = getSubmissions();
+  var s = subs[idx];
+  if (!s) return;
+  var f = configs[s.formId] || { code: s.formId, title: '' };
+  var win = window.open('', '_blank', 'width=900,height=700');
+  var rows = '';
+  var data = s.data || {};
+  var skipPrint = { formId:1, submittedBy:1, submittedAt:1, project:1, _radios:1, _checkboxes:1 };
+  Object.keys(data).forEach(function(k) {
+    if (skipPrint[k] || k.startsWith('_')) return;
+    var v = data[k];
+    if (v === null || v === undefined || v === '') return;
+    var tdLeft = '<td style="font-weight:600;padding:5px 8px;width:35%;vertical-align:top;border-bottom:1px solid #eee">' + esc(k) + '</td>';
+    if (typeof v === 'string' && v.startsWith('data:image')) {
+      rows += '<tr>' + tdLeft + '<td style="padding:5px 8px;border-bottom:1px solid #eee"><img src="' + v + '" style="max-width:180px;border:1px solid #ccc"></td></tr>';
+    } else if (typeof v === 'object') {
+      var display = Object.values(v).filter(Boolean).join(', ');
+      if (display) rows += '<tr>' + tdLeft + '<td style="padding:5px 8px;border-bottom:1px solid #eee">' + esc(display) + '</td></tr>';
+    } else {
+      rows += '<tr>' + tdLeft + '<td style="padding:5px 8px;border-bottom:1px solid #eee">' + esc(String(v)) + '</td></tr>';
+    }
+  });
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + esc(f.code) + ' — ' + esc(f.title) + '</title>' +
+    '<style>body{font-family:Segoe UI,sans-serif;margin:20mm 15mm;font-size:10pt;color:#111}' +
+    'h1{font-size:14pt;margin-bottom:4px}.sub{font-size:10pt;color:#555;margin-bottom:16px}' +
+    'table{width:100%;border-collapse:collapse;font-size:10pt}' +
+    'th{background:#e8e8e8;padding:6px 8px;text-align:left;font-size:9pt;text-transform:uppercase;letter-spacing:.04em}' +
+    '@page{margin:15mm 12mm;size:A4}@media print{button{display:none}}' +
+    '</style></head><body>' +
+    '<h1>' + esc(f.code) + ' — ' + esc(f.title) + '</h1>' +
+    '<div class="sub">Submitted by: <strong>' + esc(s.submittedBy) + '</strong> &nbsp;|&nbsp; ' +
+    'Date: <strong>' + (s.submittedAt ? new Date(s.submittedAt).toLocaleString() : '—') + '</strong> &nbsp;|&nbsp; ' +
+    'Project: <strong>' + esc(s.project || '—') + '</strong></div>' +
+    '<table><thead><tr><th style="width:35%">Field</th><th>Value</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+    '<br><button onclick="window.print()" style="padding:8px 20px;background:#0ea5e9;color:#fff;border:none;border-radius:6px;font-size:12pt;cursor:pointer;margin-right:8px">Print / Save PDF</button>' +
+    '<button onclick="window.close()" style="padding:8px 20px;background:#f1f5f9;color:#333;border:1px solid #ccc;border-radius:6px;font-size:12pt;cursor:pointer">Close</button>' +
+    '</body></html>');
+  win.document.close();
+}
+
+// ============================================================
+// ADMIN — EMAIL SUBMISSION
+// ============================================================
+function emailSubmission(idx) {
+  var configs = getFormConfigs();
+  var subs = getSubmissions();
+  var s = subs[idx];
+  if (!s) return;
+  var f = configs[s.formId] || { code: s.formId, title: '' };
+  var data = s.data || {};
+  var body = f.code + ' — ' + f.title + '\r\n';
+  body += 'Submitted by: ' + s.submittedBy + '\r\n';
+  body += 'Date: ' + (s.submittedAt ? new Date(s.submittedAt).toLocaleString() : '—') + '\r\n';
+  body += 'Project: ' + (s.project || '—') + '\r\n';
+  body += '-------------------------------------------\r\n';
+  var skipEmail = { formId:1, submittedBy:1, submittedAt:1, project:1, _radios:1, _checkboxes:1 };
+  Object.keys(data).forEach(function(k) {
+    if (skipEmail[k] || k.startsWith('_')) return;
+    var v = data[k];
+    if (v === null || v === undefined || v === '') return;
+    if (typeof v === 'string' && v.startsWith('data:image')) return;
+    if (typeof v === 'object') v = Object.values(v).filter(Boolean).join(', ');
+    body += k + ': ' + v + '\r\n';
+  });
+  var subject = encodeURIComponent('[QHSE] ' + f.code + ' — ' + s.submittedBy + ' — ' + (s.project || 'No project'));
+  var bodyEnc = encodeURIComponent(body);
+  var users = getUsers();
+  var user = users.find(function(u){ return u.name === s.submittedBy; });
+  var to = (user && user.email) ? encodeURIComponent(user.email) : '';
+  window.location.href = 'mailto:' + to + '?subject=' + subject + '&body=' + bodyEnc;
+}
+
+// ============================================================
+// ADMIN — FORM EDITOR
+// ============================================================
+var _feCurrentFormId = null;
+
+function feShowList() {
+  document.getElementById('fe-list-view').style.display = 'block';
+  document.getElementById('fe-editor-view').style.display = 'none';
+  feRenderFormCards();
+}
+
+function feRenderFormCards() {
+  var configs = getFormConfigs();
+  var container = document.getElementById('fe-form-cards');
+  if (!container) return;
+  container.innerHTML = '';
+  Object.keys(configs).forEach(function(fid) {
+    var f = configs[fid];
+    var card = document.createElement('div');
+    card.className = 'fe-form-card';
+    card.innerHTML = '<div class="form-code">' + esc(f.code) + '</div>' +
+      '<div class="form-title">' + esc(f.title) + '</div>' +
+      '<div class="form-rev">' + esc(f.revision || '') + ' &mdash; ' + (f.sections || []).length + ' sections</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+      '<button class="btn-sm btn-sm-blue" onclick="feOpenEditor(\'' + fid + '\')">Edit</button>' +
+      '<button class="btn-sm btn-sm-green" onclick="feExportFormById(\'' + fid + '\')">Export</button>' +
+      '<button class="btn-sm btn-sm-red" onclick="feResetFormById(\'' + fid + '\')">Reset</button>' +
+      '</div>';
+    container.appendChild(card);
+  });
+}
+
+function feOpenEditor(formId) {
+  _feCurrentFormId = formId;
+  var configs = getFormConfigs();
+  var f = configs[formId];
+  if (!f) return;
+  document.getElementById('fe-list-view').style.display = 'none';
+  document.getElementById('fe-editor-view').style.display = 'block';
+  document.getElementById('fe-editor-title').textContent = 'Editing: ' + f.code + ' — ' + f.title;
+  document.getElementById('fe-meta-id').value = f.id || formId;
+  document.getElementById('fe-meta-title').value = f.title || '';
+  document.getElementById('fe-meta-code').value = f.code || '';
+  document.getElementById('fe-meta-rev').value = f.revision || '';
+  feRenderSections(formId);
+}
+
+function feMetaChange() {
+  if (!_feCurrentFormId) return;
+  var configs = getFormConfigs();
+  var f = configs[_feCurrentFormId];
+  if (!f) return;
+  f.title = document.getElementById('fe-meta-title').value;
+  f.code = document.getElementById('fe-meta-code').value;
+  f.revision = document.getElementById('fe-meta-rev').value;
+  saveFormConfigs(configs);
+  document.getElementById('fe-editor-title').textContent = 'Editing: ' + f.code + ' — ' + f.title;
+}
+
+function feRenderSections(formId) {
+  var configs = getFormConfigs();
+  var f = configs[formId];
+  var container = document.getElementById('fe-sections-list');
+  if (!container || !f) return;
+  container.innerHTML = '';
+  (f.sections || []).forEach(function(section, idx) {
+    var card = document.createElement('div');
+    card.className = 'fe-section-card';
+    card.innerHTML = '<div class="fe-section-header">' +
+      '<span class="fe-section-title">' + esc(section.title || '(Untitled)') + '</span>' +
+      '<span class="fe-type-badge">' + esc(section.type || '') + '</span>' +
+      '<div style="display:flex;gap:4px;margin-left:8px;flex-wrap:wrap">' +
+      '<button class="btn-sm btn-sm-blue" onclick="feToggleSectionEditor(this,' + idx + ',\'' + formId + '\')">Edit Questions</button>' +
+      (idx > 0 ? '<button class="btn-sm btn-sm-amber" onclick="feMoveSection(\'' + formId + '\',' + idx + ',-1)">&#8593;</button>' : '') +
+      (idx < (f.sections.length - 1) ? '<button class="btn-sm btn-sm-amber" onclick="feMoveSection(\'' + formId + '\',' + idx + ',1)">&#8595;</button>' : '') +
+      '<button class="btn-sm btn-sm-red" onclick="feDeleteSection(\'' + formId + '\',' + idx + ')">Delete</button>' +
+      '</div></div>' +
+      '<div class="fe-section-body" id="fe-sec-body-' + idx + '">' +
+      feRenderSectionEditor(section, idx, formId) +
+      '</div>';
+    container.appendChild(card);
+  });
+}
+
+function feToggleSectionEditor(btn, idx, formId) {
+  var body = document.getElementById('fe-sec-body-' + idx);
+  if (!body) return;
+  body.classList.toggle('open');
+  btn.textContent = body.classList.contains('open') ? 'Close' : 'Edit Questions';
+}
+
+function feRenderSectionEditor(section, idx, formId) {
+  var type = section.type;
+  var html = '';
+
+  // Section title editor
+  html += '<div class="fe-row"><label>Title:</label><input type="text" value="' + esc(section.title || '') + '" onchange="feSectionFieldChange(\'' + formId + '\',' + idx + ',\'title\',this.value)"></div>';
+
+  if (type === 'notice') {
+    html += '<div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:6px">Notice Items:</div>';
+    (section.items || []).forEach(function(item, iIdx) {
+      html += '<div class="fe-row">' +
+        '<textarea style="flex:1;min-height:50px" onchange="feNoticeItemChange(\'' + formId + '\',' + idx + ',' + iIdx + ',this.value)">' + esc(item) + '</textarea>' +
+        '<button class="btn-sm btn-sm-red" onclick="feRemoveNoticeItem(\'' + formId + '\',' + idx + ',' + iIdx + ')">&#x2715;</button>' +
+        '</div>';
+    });
+    html += '<button class="btn-add-row" style="margin-top:6px" onclick="feAddNoticeItem(\'' + formId + '\',' + idx + ')">+ Add Item</button>';
+  } else if (type === 'free-fields') {
+    html += '<div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:6px">Fields:</div>';
+    (section.fields || []).forEach(function(field, fIdx) {
+      html += '<div class="fe-row">' +
+        '<label>Label:</label><input type="text" value="' + esc(field.label || '') + '" style="flex:2" onchange="feFreeFieldChange(\'' + formId + '\',' + idx + ',' + fIdx + ',\'label\',this.value)">' +
+        '<label>Type:</label><select onchange="feFreeFieldChange(\'' + formId + '\',' + idx + ',' + fIdx + ',\'type\',this.value)">' +
+        '<option value="text"' + (field.type === 'text' ? ' selected' : '') + '>Text</option>' +
+        '<option value="textarea"' + (field.type === 'textarea' ? ' selected' : '') + '>Textarea</option>' +
+        '</select>' +
+        '<label>Placeholder:</label><input type="text" value="' + esc(field.placeholder || '') + '" style="flex:2" onchange="feFreeFieldChange(\'' + formId + '\',' + idx + ',' + fIdx + ',\'placeholder\',this.value)">' +
+        '<button class="btn-sm btn-sm-red" onclick="feRemoveFreeField(\'' + formId + '\',' + idx + ',' + fIdx + ')">&#x2715;</button>' +
+        '</div>';
+    });
+    html += '<button class="btn-add-row" style="margin-top:6px" onclick="feAddFreeField(\'' + formId + '\',' + idx + ')">+ Add Field</button>';
+  } else if (type === 'checkbox-grid') {
+    html += '<div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:6px">Options:</div>';
+    (section.options || []).forEach(function(opt, oIdx) {
+      html += '<div class="fe-row">' +
+        '<input type="text" value="' + esc(opt) + '" onchange="feCheckboxOptionChange(\'' + formId + '\',' + idx + ',' + oIdx + ',this.value)">' +
+        '<button class="btn-sm btn-sm-red" onclick="feRemoveCheckboxOption(\'' + formId + '\',' + idx + ',' + oIdx + ')">&#x2715;</button>' +
+        '</div>';
+    });
+    html += '<button class="btn-add-row" style="margin-top:6px" onclick="feAddCheckboxOption(\'' + formId + '\',' + idx + ')">+ Add Option</button>';
+  } else if (type === 'signatures-named') {
+    html += '<div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:6px">Roles:</div>';
+    (section.roles || []).forEach(function(role, rIdx) {
+      html += '<div class="fe-row">' +
+        '<input type="text" value="' + esc(role) + '" onchange="feRoleChange(\'' + formId + '\',' + idx + ',' + rIdx + ',this.value)">' +
+        '<button class="btn-sm btn-sm-red" onclick="feRemoveRole(\'' + formId + '\',' + idx + ',' + rIdx + ')">&#x2715;</button>' +
+        '</div>';
+    });
+    html += '<button class="btn-add-row" style="margin-top:6px" onclick="feAddRole(\'' + formId + '\',' + idx + ')">+ Add Role</button>';
+  } else if (type === 'topic-comment-table' || type === 'yesno-table' || type === 'inspection-table' || type === 'lmra-table' || type === 'statement-table' || type === 'topic-details-table') {
+    html += '<div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:6px">Rows:</div>';
+    (section.rows || []).forEach(function(row, rIdx) {
+      html += '<div class="fe-row">' +
+        '<label>No:</label><input type="text" value="' + esc(row.num || '') + '" style="max-width:60px" onchange="feRowFieldChange(\'' + formId + '\',' + idx + ',' + rIdx + ',\'num\',this.value)">' +
+        '<label>Label:</label><input type="text" value="' + esc(row.label || '') + '" style="flex:3" onchange="feRowFieldChange(\'' + formId + '\',' + idx + ',' + rIdx + ',\'label\',this.value)">' +
+        '<label>Sub:</label><input type="text" value="' + esc(row.subLabel || '') + '" style="flex:2" placeholder="(sub-label)" onchange="feRowFieldChange(\'' + formId + '\',' + idx + ',' + rIdx + ',\'subLabel\',this.value)">' +
+        '<div style="display:flex;gap:4px">' +
+        (rIdx > 0 ? '<button class="btn-sm btn-sm-amber" onclick="feMoveRow(\'' + formId + '\',' + idx + ',' + rIdx + ',-1)">&#8593;</button>' : '') +
+        (rIdx < (section.rows.length - 1) ? '<button class="btn-sm btn-sm-amber" onclick="feMoveRow(\'' + formId + '\',' + idx + ',' + rIdx + ',1)">&#8595;</button>' : '') +
+        '<button class="btn-sm btn-sm-red" onclick="feRemoveRow(\'' + formId + '\',' + idx + ',' + rIdx + ')">&#x2715;</button>' +
+        '</div></div>';
+    });
+    html += '<button class="btn-add-row" style="margin-top:6px" onclick="feAddRow(\'' + formId + '\',' + idx + ',\'' + type + '\')">+ Add Row</button>';
+  } else {
+    html += '<div style="font-size:12px;color:#94a3b8;padding:8px 0">No inline editor for type: <strong>' + esc(type) + '</strong>. Edit JSON directly using Export/Import.</div>';
+  }
+  return html;
+}
+
+// Form editor mutation helpers
+function feSectionFieldChange(formId, sIdx, field, val) {
+  var configs = getFormConfigs();
+  if (configs[formId] && configs[formId].sections[sIdx]) {
+    configs[formId].sections[sIdx][field] = val;
+    saveFormConfigs(configs);
+  }
+}
+
+function feNoticeItemChange(formId, sIdx, iIdx, val) {
+  var configs = getFormConfigs();
+  if (configs[formId] && configs[formId].sections[sIdx]) {
+    configs[formId].sections[sIdx].items[iIdx] = val;
+    saveFormConfigs(configs);
+  }
+}
+function feAddNoticeItem(formId, sIdx) {
+  var configs = getFormConfigs();
+  if (!configs[formId].sections[sIdx].items) configs[formId].sections[sIdx].items = [];
+  configs[formId].sections[sIdx].items.push('New notice item');
+  saveFormConfigs(configs);
+  feRenderSections(formId);
+}
+function feRemoveNoticeItem(formId, sIdx, iIdx) {
+  var configs = getFormConfigs();
+  configs[formId].sections[sIdx].items.splice(iIdx, 1);
+  saveFormConfigs(configs);
+  feRenderSections(formId);
+}
+
+function feFreeFieldChange(formId, sIdx, fIdx, field, val) {
+  var configs = getFormConfigs();
+  if (configs[formId] && configs[formId].sections[sIdx] && configs[formId].sections[sIdx].fields[fIdx]) {
+    configs[formId].sections[sIdx].fields[fIdx][field] = val;
+    saveFormConfigs(configs);
+  }
+}
+function feAddFreeField(formId, sIdx) {
+  var configs = getFormConfigs();
+  if (!configs[formId].sections[sIdx].fields) configs[formId].sections[sIdx].fields = [];
+  configs[formId].sections[sIdx].fields.push({ label: 'New Field', type: 'text', placeholder: '' });
+  saveFormConfigs(configs);
+  feRenderSections(formId);
+}
+function feRemoveFreeField(formId, sIdx, fIdx) {
+  var configs = getFormConfigs();
+  configs[formId].sections[sIdx].fields.splice(fIdx, 1);
+  saveFormConfigs(configs);
+  feRenderSections(formId);
+}
+
+function feCheckboxOptionChange(formId, sIdx, oIdx, val) {
+  var configs = getFormConfigs();
+  if (configs[formId] && configs[formId].sections[sIdx]) {
+    configs[formId].sections[sIdx].options[oIdx] = val;
+    saveFormConfigs(configs);
+  }
+}
+function feAddCheckboxOption(formId, sIdx) {
+  var configs = getFormConfigs();
+  if (!configs[formId].sections[sIdx].options) configs[formId].sections[sIdx].options = [];
+  configs[formId].sections[sIdx].options.push('New Option');
+  saveFormConfigs(configs);
+  feRenderSections(formId);
+}
+function feRemoveCheckboxOption(formId, sIdx, oIdx) {
+  var configs = getFormConfigs();
+  configs[formId].sections[sIdx].options.splice(oIdx, 1);
+  saveFormConfigs(configs);
+  feRenderSections(formId);
+}
+
+function feRoleChange(formId, sIdx, rIdx, val) {
+  var configs = getFormConfigs();
+  if (configs[formId] && configs[formId].sections[sIdx]) {
+    configs[formId].sections[sIdx].roles[rIdx] = val;
+    saveFormConfigs(configs);
+  }
+}
+function feAddRole(formId, sIdx) {
+  var configs = getFormConfigs();
+  if (!configs[formId].sections[sIdx].roles) configs[formId].sections[sIdx].roles = [];
+  configs[formId].sections[sIdx].roles.push('New Role');
+  saveFormConfigs(configs);
+  feRenderSections(formId);
+}
+function feRemoveRole(formId, sIdx, rIdx) {
+  var configs = getFormConfigs();
+  configs[formId].sections[sIdx].roles.splice(rIdx, 1);
+  saveFormConfigs(configs);
+  feRenderSections(formId);
+}
+
+function feRowFieldChange(formId, sIdx, rIdx, field, val) {
+  var configs = getFormConfigs();
+  if (configs[formId] && configs[formId].sections[sIdx] && configs[formId].sections[sIdx].rows[rIdx]) {
+    configs[formId].sections[sIdx].rows[rIdx][field] = val;
+    saveFormConfigs(configs);
+  }
+}
+function feAddRow(formId, sIdx, type) {
+  var configs = getFormConfigs();
+  if (!configs[formId].sections[sIdx].rows) configs[formId].sections[sIdx].rows = [];
+  var newRow = { num: String(configs[formId].sections[sIdx].rows.length + 1), label: 'New Item' };
+  if (type === 'lmra-table') newRow.radioName = 'lmra-q-new-' + Date.now();
+  if (type === 'yesno-table') newRow.radioName = 'yn-new-' + Date.now();
+  if (type === 'statement-table') newRow.radioName = 'st-new-' + Date.now();
+  configs[formId].sections[sIdx].rows.push(newRow);
+  saveFormConfigs(configs);
+  feRenderSections(formId);
+}
+function feRemoveRow(formId, sIdx, rIdx) {
+  var configs = getFormConfigs();
+  configs[formId].sections[sIdx].rows.splice(rIdx, 1);
+  saveFormConfigs(configs);
+  feRenderSections(formId);
+}
+function feMoveRow(formId, sIdx, rIdx, dir) {
+  var configs = getFormConfigs();
+  var rows = configs[formId].sections[sIdx].rows;
+  var newIdx = rIdx + dir;
+  if (newIdx < 0 || newIdx >= rows.length) return;
+  var tmp = rows[rIdx]; rows[rIdx] = rows[newIdx]; rows[newIdx] = tmp;
+  saveFormConfigs(configs);
+  feRenderSections(formId);
+}
+
+function feMoveSection(formId, sIdx, dir) {
+  var configs = getFormConfigs();
+  var sections = configs[formId].sections;
+  var newIdx = sIdx + dir;
+  if (newIdx < 0 || newIdx >= sections.length) return;
+  var tmp = sections[sIdx]; sections[sIdx] = sections[newIdx]; sections[newIdx] = tmp;
+  saveFormConfigs(configs);
+  feRenderSections(formId);
+}
+
+function feDeleteSection(formId, sIdx) {
+  if (!confirm('Delete this section? This cannot be undone.')) return;
+  var configs = getFormConfigs();
+  configs[formId].sections.splice(sIdx, 1);
+  saveFormConfigs(configs);
+  feRenderSections(formId);
+}
+
+function feAddSection() {
+  if (!_feCurrentFormId) return;
+  var type = prompt('Section type:\nnotice | attendee-table | topic-comment-table | yesno-table | statement-table | topic-details-table | free-fields | declaration-table | inspection-table | lmra-table | checkbox-grid | persons-table | consequence-table | investigation-table | custom6-table | action-table | signatures | signatures-named', 'free-fields');
+  if (!type) return;
+  var title = prompt('Section title:', 'New Section');
+  if (!title) return;
+  var configs = getFormConfigs();
+  var newSection = { title: title, type: type };
+  // Provide minimal structure per type
+  if (type === 'notice') newSection.items = [];
+  else if (type === 'free-fields') newSection.fields = [];
+  else if (type === 'checkbox-grid') { newSection.options = []; newSection.fieldName = 'field-' + Date.now(); }
+  else if (type === 'signatures-named') newSection.roles = [];
+  else if (type === 'attendee-table' || type === 'declaration-table' || type === 'action-table') newSection.tbodyId = _feCurrentFormId + '-' + type + '-' + Date.now();
+  else if (['topic-comment-table','yesno-table','statement-table','topic-details-table','inspection-table','lmra-table'].indexOf(type) >= 0) newSection.rows = [];
+  configs[_feCurrentFormId].sections.push(newSection);
+  saveFormConfigs(configs);
+  feRenderSections(_feCurrentFormId);
+}
+
+
+function feResetForm() {
+  if (!_feCurrentFormId) return;
+  feResetFormById(_feCurrentFormId);
+}
+
+function feResetFormById(formId) {
+  if (!confirm('Reset "' + formId + '" to default config? All edits will be lost.')) return;
+  var defaults = JSON.parse(JSON.stringify(DEFAULT_FORM_CONFIGS));
+  if (!defaults[formId]) { showToast('No default found for ' + formId, true); return; }
+  var configs = getFormConfigs();
+  configs[formId] = defaults[formId];
+  saveFormConfigs(configs);
+  if (_feCurrentFormId === formId) feOpenEditor(formId);
+  else feRenderFormCards();
+  showToast('Form "' + formId + '" reset to default.');
+}
+
+function resetAllFormConfigs() {
+  if (!confirm('Reset ALL form configs to defaults? All edits will be lost.')) return;
+  saveFormConfigs(JSON.parse(JSON.stringify(DEFAULT_FORM_CONFIGS)));
+  feShowList();
+  showToast('All form configs reset to defaults.');
+}
+
+</script>
+</body>
+</html>
