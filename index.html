@@ -710,15 +710,14 @@ function doLoginStep1() {
   document.getElementById('login-step-email').style.display = 'none';
 
   if (isAdmin) {
-    // Try signing in — if account exists show password field, if not send invite email
-    sb.auth.signInWithPassword({ email: email, password: '##PROBE##' }).then(function(res) {
-      if (res.error && res.error.message === 'Invalid login credentials') {
-        // Account exists — show password field
+    // Check Supabase Auth users table via employees — if they have a confirmed account show password, else send magic link
+    sb.from('admin_accounts').select('password_set').eq('email', email).single().then(function(res) {
+      if (res.data && res.data.password_set) {
+        // Account exists and password set — show password screen
         document.getElementById('login-step-password').style.display = 'block';
         document.getElementById('login-password').focus();
       } else {
-        // No account yet — create it and send password setup email
-        sb.auth.admin; // not available client-side, use signInWithOtp to trigger email
+        // First time — send magic link to set password
         sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: true } }).then(function(r) {
           if (r.error) {
             document.getElementById('login-step-email').style.display = 'block';
@@ -880,6 +879,8 @@ function doSetPassword() {
   err.style.display = 'none';
   sb.auth.updateUser({ password: pw1 }).then(function(res) {
     if (res.error) { err.textContent = res.error.message; err.style.display = 'block'; return; }
+    // Mark password as set
+    sb.from('admin_accounts').update({ password_set: true }).eq('email', res.data.user.email);
     var overlay = document.getElementById('set-pw-overlay');
     if (overlay) overlay.remove();
     enterApp(res.data.user, true);
