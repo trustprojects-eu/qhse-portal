@@ -281,7 +281,7 @@ textarea{resize:vertical;min-height:60px}
       <h1>QHSE Portal</h1>
     </div>
 
-    <!-- STEP 1: Email entry (all users) -->
+    <!-- STEP 1: Email entry -->
     <div id="login-step-email">
       <label for="login-email">Email address</label>
       <input type="email" id="login-email" placeholder="you@company.com" autocomplete="email">
@@ -289,9 +289,8 @@ textarea{resize:vertical;min-height:60px}
       <button class="btn-login" onclick="doLoginStep1()">Continue</button>
     </div>
 
-    <!-- STEP 2A: Admin — password -->
+    <!-- STEP 2A: Admin — email + password -->
     <div id="login-step-password" style="display:none">
-      <p style="font-size:13px;color:#64748b;margin-bottom:12px">Admin account detected. Enter your password.</p>
       <label for="login-password">Password</label>
       <input type="password" id="login-password" placeholder="Your password" autocomplete="current-password">
       <div style="text-align:right;margin-top:4px">
@@ -310,17 +309,6 @@ textarea{resize:vertical;min-height:60px}
         <div style="font-size:13px;color:#64748b;line-height:1.6">We sent a login link to<br><strong id="magic-link-email"></strong><br>Click the link to access your forms.</div>
       </div>
       <button onclick="resetLoginSteps()" style="width:100%;margin-top:8px;padding:10px;background:none;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;font-size:14px;color:#64748b">Use different email</button>
-    </div>
-
-    <!-- STEP 2C: First time admin — set password -->
-    <div id="login-step-setpassword" style="display:none">
-      <p style="font-size:13px;color:#64748b;margin-bottom:12px">Welcome! Set your password to continue.</p>
-      <label for="login-newpw1">New Password</label>
-      <input type="password" id="login-newpw1" placeholder="Min. 8 characters">
-      <label for="login-newpw2" style="margin-top:12px">Confirm Password</label>
-      <input type="password" id="login-newpw2" placeholder="Repeat password">
-      <div class="login-error" id="login-error-setpw"></div>
-      <button class="btn-login" onclick="doSetPassword()">Set Password & Sign In</button>
     </div>
 
   </div>
@@ -702,14 +690,15 @@ function resetLoginSteps() {
   document.getElementById('login-step-email').style.display = 'block';
   document.getElementById('login-step-password').style.display = 'none';
   document.getElementById('login-step-magiclink').style.display = 'none';
-  document.getElementById('login-step-setpassword').style.display = 'none';
   document.getElementById('login-error').style.display = 'none';
   document.getElementById('login-email').value = '';
 }
 
-function showLoginError(elId, msg) {
+function showLoginError(elId, msg, isGood) {
   var el = document.getElementById(elId);
-  el.textContent = msg; el.style.display = 'block';
+  el.textContent = msg;
+  el.style.color = isGood ? '#16a34a' : '#ef4444';
+  el.style.display = 'block';
 }
 
 function doLoginStep1() {
@@ -721,34 +710,43 @@ function doLoginStep1() {
   document.getElementById('login-step-email').style.display = 'none';
 
   if (isAdmin) {
-    document.getElementById('login-step-email').style.display = 'none';
-    // Use password reset endpoint to check existence without creating a session
-    sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.href }).then(function(res) {
-      // resetPasswordForEmail succeeds whether or not account exists on free tier
-      // So: always show set-password first; if they already have one they'll get an error and we redirect to password screen
-      document.getElementById('login-step-setpassword').style.display = 'block';
-      document.getElementById('login-newpw1').focus();
-    });
-  } else {
-    // Regular user — send magic link
-    sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: false } }).then(function(res) {
-      if (res.error) {
-        // User doesn't exist yet — check if they have an invite
-        sb.from('employees').select('id').eq('email', email).eq('active', true).single().then(function(empRes) {
-          if (empRes.error || !empRes.data) {
+    // Try signing in — if account exists show password field, if not send invite email
+    sb.auth.signInWithPassword({ email: email, password: '##PROBE##' }).then(function(res) {
+      if (res.error && res.error.message === 'Invalid login credentials') {
+        // Account exists — show password field
+        document.getElementById('login-step-password').style.display = 'block';
+        document.getElementById('login-password').focus();
+      } else {
+        // No account yet — create it and send password setup email
+        sb.auth.admin; // not available client-side, use signInWithOtp to trigger email
+        sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: true } }).then(function(r) {
+          if (r.error) {
             document.getElementById('login-step-email').style.display = 'block';
-            showLoginError('login-error', 'No account found for this email. Contact your administrator.');
+            showLoginError('login-error', 'Could not send setup email: ' + r.error.message);
           } else {
-            sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: true } }).then(function() {
-              document.getElementById('magic-link-email').textContent = email;
-              document.getElementById('login-step-magiclink').style.display = 'block';
-            });
+            document.getElementById('magic-link-email').textContent = email;
+            document.getElementById('login-step-magiclink').style.display = 'block';
           }
         });
-      } else {
-        document.getElementById('magic-link-email').textContent = email;
-        document.getElementById('login-step-magiclink').style.display = 'block';
       }
+    });
+  } else {
+    // Regular user — check they exist in employees table first
+    sb.from('employees').select('id').eq('email', email).eq('active', true).single().then(function(empRes) {
+      if (empRes.error || !empRes.data) {
+        document.getElementById('login-step-email').style.display = 'block';
+        showLoginError('login-error', 'No account found for this email. Contact your administrator.');
+        return;
+      }
+      sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: true } }).then(function(r) {
+        if (r.error) {
+          document.getElementById('login-step-email').style.display = 'block';
+          showLoginError('login-error', 'Could not send login link: ' + r.error.message);
+        } else {
+          document.getElementById('magic-link-email').textContent = email;
+          document.getElementById('login-step-magiclink').style.display = 'block';
+        }
+      });
     });
   }
 }
@@ -763,44 +761,7 @@ function doAdminLogin() {
 
   sb.auth.signInWithPassword({ email: email, password: pw }).then(function(res) {
     btn.disabled = false; btn.textContent = 'Sign In';
-    if (res.error) {
-      if (res.error.message.includes('Invalid login') || res.error.message.includes('Email not confirmed')) {
-        // First time — show set password screen
-        document.getElementById('login-step-password').style.display = 'none';
-        document.getElementById('login-step-setpassword').style.display = 'block';
-      } else {
-        showLoginError('login-error-pw', res.error.message);
-      }
-      return;
-    }
-    enterApp(res.data.user, true);
-  });
-}
-
-function doSetPassword() {
-  var email = document.getElementById('login-email').value.trim().toLowerCase();
-  var pw1 = document.getElementById('login-newpw1').value;
-  var pw2 = document.getElementById('login-newpw2').value;
-  if (pw1.length < 8) { showLoginError('login-error-setpw', 'Password must be at least 8 characters.'); return; }
-  if (pw1 !== pw2) { showLoginError('login-error-setpw', 'Passwords do not match.'); return; }
-  document.getElementById('login-error-setpw').style.display = 'none';
-  var btn = document.getElementById('login-step-setpassword').querySelector('.btn-login');
-  btn.disabled = true; btn.textContent = 'Setting up…';
-
-  sb.auth.signUp({ email: email, password: pw1 }).then(function(res) {
-    btn.disabled = false; btn.textContent = 'Set Password & Sign In';
-    if (res.error) {
-      if (res.error.message.toLowerCase().includes('already registered')) {
-        // Account exists — switch to password login screen
-        document.getElementById('login-step-setpassword').style.display = 'none';
-        document.getElementById('login-step-password').style.display = 'block';
-        document.getElementById('login-password').focus();
-        showLoginError('login-error-pw', 'Account already exists. Please enter your password.');
-      } else {
-        showLoginError('login-error-setpw', res.error.message);
-      }
-      return;
-    }
+    if (res.error) { showLoginError('login-error-pw', 'Incorrect password. Try again or use Forgot password.'); return; }
     enterApp(res.data.user, true);
   });
 }
@@ -810,8 +771,7 @@ function doForgotPassword() {
   if (!email) { showLoginError('login-error-pw', 'Please go back and enter your email first.'); return; }
   sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.href }).then(function(res) {
     if (res.error) { showLoginError('login-error-pw', res.error.message); return; }
-    showLoginError('login-error-pw', 'Password reset email sent! Check your inbox.');
-    document.getElementById('login-error-pw').style.color = '#16a34a';
+    showLoginError('login-error-pw', 'Password reset email sent! Check your inbox.', true);
   });
 }
 
@@ -860,33 +820,71 @@ function enterApp(authUser, isAdmin) {
   });
 }
 
-// Clear any stale session on page load, then listen for magic link redirects
+// Clear stale sessions, handle magic link + password recovery redirects
 sb.auth.getSession().then(function(res) {
   var session = res.data && res.data.session;
-  if (session) {
-    // Only auto-enter if this looks like a magic link redirect (has hash token in URL)
+  if (!session) return;
+  var hash = window.location.hash;
+  if (hash && hash.includes('access_token')) return; // handled by onAuthStateChange
+  sb.auth.signOut();
+});
+
+sb.auth.onAuthStateChange(function(event, session) {
+  if (event === 'PASSWORD_RECOVERY') {
+    // Admin clicked password reset link — show set password form
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login-step-email').style.display = 'none';
+    document.getElementById('login-step-password').style.display = 'none';
+    document.getElementById('login-step-magiclink').style.display = 'none';
+    showSetPasswordScreen();
+    return;
+  }
+  if (event === 'SIGNED_IN' && session) {
     var hash = window.location.hash;
-    if (hash && hash.includes('access_token')) {
+    if (hash && (hash.includes('access_token') || hash.includes('type=magiclink') || hash.includes('type=recovery'))) {
       var email = session.user.email;
       var isAdmin = ADMIN_EMAILS.indexOf(email.toLowerCase()) >= 0;
+      if (isAdmin && hash.includes('type=recovery')) return; // handled by PASSWORD_RECOVERY
       enterApp(session.user, isAdmin);
-    } else {
-      // Stale session — sign out so user must log in fresh
-      sb.auth.signOut();
     }
   }
 });
 
-sb.auth.onAuthStateChange(function(event, session) {
-  if (event === 'SIGNED_IN' && session) {
-    var hash = window.location.hash;
-    if (hash && hash.includes('access_token')) {
-      var email = session.user.email;
-      var isAdmin = ADMIN_EMAILS.indexOf(email.toLowerCase()) >= 0;
-      enterApp(session.user, isAdmin);
-    }
-  }
-});
+function showSetPasswordScreen() {
+  var existing = document.getElementById('set-pw-overlay');
+  if (existing) return;
+  var overlay = document.createElement('div');
+  overlay.id = 'set-pw-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:linear-gradient(135deg,#020617,#0f172a,#064e3b);display:flex;align-items:center;justify-content:center;z-index:9999';
+  overlay.innerHTML =
+    '<div style="background:#fff;border-radius:16px;padding:48px 40px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.4)">' +
+    '<div style="font-size:20px;font-weight:700;color:#020617;margin-bottom:6px">Set your password</div>' +
+    '<div style="font-size:13px;color:#64748b;margin-bottom:24px">Choose a strong password for your admin account.</div>' +
+    '<label style="display:block;font-size:13px;font-weight:600;color:#475569;margin-bottom:6px">New Password</label>' +
+    '<input type="password" id="spw1" placeholder="Min. 8 characters" style="width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:15px;outline:none;margin-bottom:14px">' +
+    '<label style="display:block;font-size:13px;font-weight:600;color:#475569;margin-bottom:6px">Confirm Password</label>' +
+    '<input type="password" id="spw2" placeholder="Repeat password" style="width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:15px;outline:none;margin-bottom:6px">' +
+    '<div id="spw-err" style="color:#ef4444;font-size:13px;margin-bottom:14px;display:none"></div>' +
+    '<button onclick="doSetPassword()" style="width:100%;padding:13px;background:linear-gradient(90deg,#22c55e,#0ea5e9);color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer">Set Password & Sign In</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+function doSetPassword() {
+  var pw1 = document.getElementById('spw1').value;
+  var pw2 = document.getElementById('spw2').value;
+  var err = document.getElementById('spw-err');
+  if (pw1.length < 8) { err.textContent = 'Min. 8 characters.'; err.style.display = 'block'; return; }
+  if (pw1 !== pw2) { err.textContent = 'Passwords do not match.'; err.style.display = 'block'; return; }
+  err.style.display = 'none';
+  sb.auth.updateUser({ password: pw1 }).then(function(res) {
+    if (res.error) { err.textContent = res.error.message; err.style.display = 'block'; return; }
+    var overlay = document.getElementById('set-pw-overlay');
+    if (overlay) overlay.remove();
+    enterApp(res.data.user, true);
+  });
+}
 
 function initFormStatus() {
   appState.formStatus = {};
