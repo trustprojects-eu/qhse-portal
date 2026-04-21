@@ -718,7 +718,7 @@ function doLoginStep1() {
         document.getElementById('login-password').focus();
       } else {
         // First time — send magic link to set password
-        sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: true } }).then(function(r) {
+        sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: true, emailRedirectTo: 'https://trustprojects-eu.github.io/qhse-portal/' } }).then(function(r) {
           if (r.error) {
             document.getElementById('login-step-email').style.display = 'block';
             showLoginError('login-error', 'Could not send setup email: ' + r.error.message);
@@ -737,7 +737,7 @@ function doLoginStep1() {
         showLoginError('login-error', 'No account found for this email. Contact your administrator.');
         return;
       }
-      sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: true } }).then(function(r) {
+      sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: true, emailRedirectTo: 'https://trustprojects-eu.github.io/qhse-portal/' } }).then(function(r) {
         if (r.error) {
           document.getElementById('login-step-email').style.display = 'block';
           showLoginError('login-error', 'Could not send login link: ' + r.error.message);
