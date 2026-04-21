@@ -717,15 +717,18 @@ function doLoginStep1() {
         document.getElementById('login-step-password').style.display = 'block';
         document.getElementById('login-password').focus();
       } else {
-        // First time — send magic link to set password
-        sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: true, emailRedirectTo: 'https://trustprojects-eu.github.io/qhse-portal/index.html' } }).then(function(r) {
-          if (r.error) {
-            document.getElementById('login-step-email').style.display = 'block';
-            showLoginError('login-error', 'Could not send setup email: ' + r.error.message);
-          } else {
-            document.getElementById('magic-link-email').textContent = email;
-            document.getElementById('login-step-magiclink').style.display = 'block';
-          }
+        // First time — sign up then send password reset email
+        sb.auth.signUp({ email: email, password: crypto.randomUUID() }).then(function(signUpRes) {
+          sb.auth.resetPasswordForEmail(email, { redirectTo: 'https://trustprojects-eu.github.io/qhse-portal/index.html' }).then(function(r) {
+            if (r.error) {
+              document.getElementById('login-step-email').style.display = 'block';
+              showLoginError('login-error', 'Could not send setup email: ' + r.error.message);
+            } else {
+              document.getElementById('magic-link-email').textContent = email;
+              document.getElementById('login-step-magiclink').style.display = 'block';
+              document.getElementById('login-step-magiclink').querySelector('div div:nth-child(2)').textContent = 'We sent a password setup link to';
+            }
+          });
         });
       }
     });
